@@ -17,6 +17,7 @@ function getCommentAuthor(req,res){
         res.status(200).send({
             message: "댓글 게시자 조회 성공",
             data: {
+                author_id: user.id,
                 username: user.username,
                 profile_img: user.profile_img
             }

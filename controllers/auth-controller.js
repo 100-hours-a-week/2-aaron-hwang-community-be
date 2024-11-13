@@ -56,6 +56,7 @@ function getUserProfile(req, res) {
             res.status(200).send({
                 message: "화원정보 조회 성공",
                 data: {
+                    id: user.id,
                     email: user.email,
                     username: user.username,
                     profile_img: user.profile_img
