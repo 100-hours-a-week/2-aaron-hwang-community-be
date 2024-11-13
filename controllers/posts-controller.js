@@ -27,9 +27,8 @@ function getAuthorProfile(req, res) {
     const rawData = fs.readFileSync(dataPath);
     const users = JSON.parse(rawData).users;
     const user_id = parseInt(req.params.author_id)
-    console.log(req.params)
     const user = users.find((u) => u.id == user_id );
-    console.log(user)
+
     if(user){
         res.status(200).send({
             message: "화원정보 조회 성공",
@@ -42,9 +41,70 @@ function getAuthorProfile(req, res) {
     else{
         res.status(404).json({message: "존재하지 않는 사용자입니다"})
     }
-
-    
     
 }
 
-export { getPosts, getAuthorProfile };
+function getPostDetail(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    
+    const dataPath = path.join(__dirname,'.','public','data','posts.json');
+    const rawData = fs.readFileSync(dataPath);
+    const posts = JSON.parse(rawData).posts;
+    const post_id = parseInt(req.params.post_id);
+    const post = posts.find((p) => p.id == post_id);
+
+    if(post){
+        res.status(200).send({
+            message: "게시글 상세 조회 성공",
+            data: post
+        })
+    }
+    else{
+        res.status(404).json({message: "존재하지 않는 리소스입니다"})
+    }
+}
+
+function getComments(req, res){
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    
+    const dataPath = path.join(__dirname,'.','public','data','comments.json');
+    const rawData = fs.readFileSync(dataPath);
+    const comments = JSON.parse(rawData).comments;
+    const post_id = parseInt(req.params.post_id);
+    const comment = comments.filter((c) => c.post_id == post_id);
+    
+    if(comment){
+        res.status(200).send({
+            message: "댓글 조회 성공",
+            data: comment
+        })
+    }
+    else{
+        res.status(404).json({message: "존재하지 않는 리소스입니다"})
+    }
+}
+function getLikes(req, res){
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    
+    const dataPath = path.join(__dirname,'.','public','data','likes.json');
+    const rawData = fs.readFileSync(dataPath);
+    const likes = JSON.parse(rawData).likes;
+    const post_id = parseInt(req.params.post_id);
+    const like_list = likes.filter((l) => l.post_id == post_id && l.status == 1);
+    const userIds = like_list.map(like => like.user_id);
+
+    if(userIds){
+        res.status(200).send({
+            message: "좋아요 조회 성공",
+            data: userIds
+        })
+    }
+    else{
+        res.status(404).json({message: "존재하지 않는 리소스입니다"})
+    }
+}
+
+export { getPosts, getAuthorProfile, getPostDetail, getComments, getLikes };
