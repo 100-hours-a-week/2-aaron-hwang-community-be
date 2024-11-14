@@ -31,6 +31,9 @@ class Post {
     }
 
     createPost() {
+        if (!this.title || !this.content) {
+            return { success: false, error: '제목과 내용은 빈칸이 될 수 없습니다.' };
+        }
         try{
             const posts = this.loadPosts();
             const newId = posts.length > 0 ? Math.max(...posts.map(post => post.id)) + 1 : 1;
