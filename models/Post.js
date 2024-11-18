@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import connection from './db.js';
+//import connection from './db.js';
 
 const __dirname = path.resolve();
 

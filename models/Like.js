@@ -28,9 +28,8 @@ class Like {
     static createLike(post_id, user_id) {
         try{
             const likes = Like.loadLikes();
-            
             const newId = likes.length > 0 ? Math.max(...likes.map(like => like.id)) + 1 : 1;
-            console.log(likes)
+            
             likes.push({ 
                 id: newId, 
                 post_id: post_id,
