@@ -1,55 +1,8 @@
-import Comment from '../models/Comment.js';
+import path from 'path';
+import fs, { futimesSync } from 'fs';
 
-function createComment(req, res) {
-    const { content } = req.body;
-    const post_id = parseInt(req.params.post_id);
-    const user_id = req.session.userId
-    if (!user_id) {
-        return res.status(401).json({ message: "권한 없음" })
-    }
+const __dirname = path.resolve();
 
-    try {
-        const newComment = new Comment(post_id, user_id, content);
-        newComment.createComment();
-        console.log(newComment)
-        return res.status(200).send({ message: '댓글 작성 성공!' });
-    } catch(error) {
-        return res.status(500).json({error: error.message});
-    }
-}
-
-function updateComment(req, res) {
-    const { content } = req.body;
-    const id = parseInt(req.params.comment_id);
-    const user_id = req.session.userId
-    if (!user_id) {
-        return res.status(401).json({ message: "권한 없음" })
-    }
-
-    try {
-        Comment.updateComment(id, content);
-        return res.status(200).send({ message: '댓글 수정 성공!' });
-    } catch(error) {
-        return res.status(500).json({error: error.message});
-    }
-}
-
-function deleteComment(req, res) {
-    const id = parseInt(req.params.comment_id);
-    const user_id = req.session.userId
-
-    if (!user_id) {
-        return res.status(401).json({ message: "권한 없음" })
-    }
-
-    try {
-        Comment.deleteComment(id);
-        return res.status(200).send({ message: '댓글 삭제 성공!' });
-    } catch(error) {
-        return res.status(500).json({error: error.message});
-    }
-}
-/* 
 function getCommentAuthor(req,res){
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -73,6 +26,6 @@ function getCommentAuthor(req,res){
     else{
         res.status(404).json({message: "존재하지 않는 댓글 게시자입니다"})
     }
-} */
+}
 
-export { createComment, updateComment, deleteComment };
+export { getCommentAuthor };

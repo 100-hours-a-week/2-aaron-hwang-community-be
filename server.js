@@ -5,7 +5,6 @@ import { dirname } from 'path';
 import userRouter from './routes/auth.js';
 import postRouter from './routes/post.js';
 import commentRouter from './routes/comment.js';
-import likeRouter from './routes/like.js';
 import cors from 'cors';
 import session from 'express-session';
 import dotenv from 'dotenv';
@@ -19,7 +18,7 @@ const publicPath = `${__dirname}/public`;
 const { SESSION_KEY } = process.env;
 
 app.use(session({
-    secret: 'SESSION_KEY',
+    secret: SESSION_KEY,
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false }
@@ -29,7 +28,6 @@ app.use(helmet.xssFilter());
 app.use('/api/auth', userRouter);
 app.use('/api/posts', postRouter);
 app.use('/api/comments', commentRouter);
-app.use('/api/likes', likeRouter);
 app.use(cors({
     origin: 'http://localhost:3000',
 }));
