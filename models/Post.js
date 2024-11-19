@@ -1,9 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import User from './User.js'
-import Comment from './Comment.js'
-import Like from './Like.js'
-
+//import connection from './db.js';
 
 const __dirname = path.resolve();
 
@@ -14,9 +11,9 @@ class Post {
         this.title = title;
         this.content = content;
         this.image = image;
-        this.likes = likes || [];
+        this.likes = likes;
         this.views = views;
-        this.comments = comments || [];
+        this.comments = comments;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -25,17 +22,6 @@ class Post {
         const dataPath = path.join(__dirname, 'public', 'data', 'posts.json');
         const rawData = fs.readFileSync(dataPath);
         const posts = JSON.parse(rawData).posts;
-        const users = User.loadUsers();
-        const comments = Comment.loadComments();
-        const likes = Like.loadLikes();
-
-        posts.forEach(post => {
-            post.author_id = users.find(u => u.id == post.author_id);
-            post.comments = comments.filter(c => c.post_id == post.id);
-            post.likes = likes.filter(l => l.post_id == post.id)
-        }
-
-        )
         return posts;
     }
 
