@@ -1,4 +1,4 @@
-//import connection from './db.js';
+import connection from './db.js';
 import bcrypt from 'bcrypt';
 import fs from 'fs';
 import path from 'path';
