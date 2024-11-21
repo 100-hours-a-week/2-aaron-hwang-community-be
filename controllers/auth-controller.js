@@ -59,6 +59,24 @@ function getSessionUser (req, res) {
     })
 }
 
+function getUserProfile (req, res){
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+    const user_id = parseInt(req.params.user_id);
+    const users = User.loadUsers();
+    const user = users.find(u => u.id == user_id)
+
+    if(!user){
+        return res.status(404).json({message: "해당 유저 없음"});
+    }
+    res.status(200).send({
+        message: "조회 성공",
+        data: {
+            username: user.username,
+            profile_img: user.profile_img
+        }
+    })
+}
+
 function logout(req, res) {
     req.session.destroy(err => {
         if (err) {
@@ -68,4 +86,4 @@ function logout(req, res) {
     });
 };
 
-export { loginUser, signupUser, getSessionUser, logout };
+export { loginUser, signupUser, getSessionUser, getUserProfile, logout };
