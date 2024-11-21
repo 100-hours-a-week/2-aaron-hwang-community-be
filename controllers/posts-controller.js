@@ -1,7 +1,4 @@
-import path from 'path';
-import fs from 'fs';
-
-const __dirname = path.resolve();
+import Post from '../models/Post.js'
 
 function getPosts(req, res){
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
@@ -48,9 +45,7 @@ function getPostDetail(req, res) {
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
     res.setHeader('Access-Control-Allow-Credentials', true);
     
-    const dataPath = path.join(__dirname,'.','public','data','posts.json');
-    const rawData = fs.readFileSync(dataPath);
-    const posts = JSON.parse(rawData).posts;
+    const posts = Post.loadPosts();
     const post_id = parseInt(req.params.post_id);
     const post = posts.find((p) => p.id == post_id);
 
