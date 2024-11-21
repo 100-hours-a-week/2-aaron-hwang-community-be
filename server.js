@@ -19,7 +19,7 @@ const publicPath = `${__dirname}/public`;
 const { SESSION_KEY } = process.env;
 
 app.use(session({
-    secret: 'SESSION_KEY',
+    secret: SESSION_KEY,
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false }
