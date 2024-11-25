@@ -1,15 +1,18 @@
 import Comment from '../models/Comment.js';
 
 function createComment(req, res) {
-    const { content } = req.body;
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.setHeader('Access-Control-Allow-Credentials', true)
+    const { commentContent } = req.body;
     const post_id = parseInt(req.params.post_id);
-    const user_id = req.session.userId
+    console.log('asdasdasd')
+    /* const user_id = req.session.userId;
     if (!user_id) {
         return res.status(401).json({ message: "권한 없음" })
-    }
+    } */
 
     try {
-        const newComment = new Comment(post_id, user_id, content);
+        const newComment = new Comment(null, post_id, 1, commentContent);
         newComment.createComment();
         console.log(newComment)
         return res.status(200).send({ message: '댓글 작성 성공!' });
@@ -19,16 +22,19 @@ function createComment(req, res) {
 }
 
 function updateComment(req, res) {
-    const { content } = req.body;
-    const id = parseInt(req.params.comment_id);
-    const user_id = req.session.userId
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+    //res.setHeader('Access-Control-Allow-Credentials', true);
+    console.log("tnwjdgkfjdhKTek")
+    const content  = req.body.commentContent;
+    const id =  parseInt(req.params.comment_id);
+    /* const user_id = req.session.userId
     if (!user_id) {
         return res.status(401).json({ message: "권한 없음" })
     }
-
+ */
     try {
         Comment.updateComment(id, content);
-        return res.status(200).send({ message: '댓글 수정 성공!' });
+        return res. status(200).send({ message: '댓글 수정 성공!' });
     } catch(error) {
         return res.status(500).json({error: error.message});
     }
