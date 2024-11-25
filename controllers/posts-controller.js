@@ -2,10 +2,8 @@ import Post from '../models/Post.js'
 
 function getPosts(req, res){
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-    const dataPath = path.join(__dirname,'.','public','data','posts.json');
-    const rawData = fs.readFileSync(dataPath);
-    const posts = JSON.parse(rawData).posts;
-
+    
+    const posts = Post.loadPosts();
     if(posts){
         res.status(200).send({
             message: "게시글 목록 조회 성공",
@@ -17,89 +15,77 @@ function getPosts(req, res){
     }
 }
 
-function getAuthorProfile(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-    
-    const dataPath = path.join(__dirname,'.','public','data','users.json');
-    const rawData = fs.readFileSync(dataPath);
-    const users = JSON.parse(rawData).users;
-    const user_id = parseInt(req.params.author_id)
-    const user = users.find((u) => u.id == user_id );
-
-    if(user){
-        res.status(200).send({
-            message: "화원정보 조회 성공",
-            data: {
-                username: user.username,
-                profile_img: user.profile_img
-            }
-        })
-    }
-    else{
-        res.status(404).json({message: "존재하지 않는 사용자입니다"})
-    }
-    
-}
-
 function getPostDetail(req, res) {
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-    res.setHeader('Access-Control-Allow-Credentials', true);
     
+    const post_id = parseInt(req.params.post_id);
+    
+    // 조회수 증가
+    const incrementResult = Post.incrementView(post_id);
+
+    if(!incrementResult) {
+        return res.status(404).json({message: "존재하지 않는 리소스입니다"})
+    }
+
     const posts = Post.loadPosts();
-    const post_id = parseInt(req.params.post_id);
     const post = posts.find((p) => p.id == post_id);
-
-    if(post){
-        res.status(200).send({
-            message: "게시글 상세 조회 성공",
-            data: post
-        })
-    }
-    else{
-        res.status(404).json({message: "존재하지 않는 리소스입니다"})
-    }
+    
+    res.status(200).send({
+        message: "게시글 상세 조회 성공",
+        data: post
+    });
 }
 
-function getComments(req, res){
+function createPost(req, res) {
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    
-    const dataPath = path.join(__dirname,'.','public','data','comments.json');
-    const rawData = fs.readFileSync(dataPath);
-    const comments = JSON.parse(rawData).comments;
-    const post_id = parseInt(req.params.post_id);
-    const comment = comments.filter((c) => c.post_id == post_id);
-    
-    if(comment){
-        res.status(200).send({
-            message: "댓글 조회 성공",
-            data: comment
-        })
+    res.setHeader('Access-Control-Allow-Credentials', true)
+
+    const { title, content, image } = req.body;
+    const author_id = req.session.userId;
+
+    if (!title || !content || !author_id) {
+        return res.status(400).json({ message: '제목, 내용, 작성자는 필수입니다.' });
     }
-    else{
-        res.status(404).json({message: "존재하지 않는 리소스입니다"})
+
+    const post = new Post(null, title, content, author_id, image).createPost();
+
+    if (!post) {
+        return res.status(500).json({ message: '게시글 생성 중 오류가 발생했습니다.' });
     }
+
+    res.status(201).json({ message: '게시글 작성 성공', data: post });
 }
-function getLikes(req, res){
+
+function updatePost(req, res) {
+    console.log("asdasd")
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    
-    const dataPath = path.join(__dirname,'.','public','data','likes.json');
-    const rawData = fs.readFileSync(dataPath);
-    const likes = JSON.parse(rawData).likes;
-    const post_id = parseInt(req.params.post_id);
-    const like_list = likes.filter((l) => l.post_id == post_id && l.status == 1);
-    const userIds = like_list.map(like => like.user_id);
 
-    if(userIds){
-        res.status(200).send({
-            message: "좋아요 조회 성공",
-            data: userIds
-        })
+    const postId = parseInt(req.params.post_id);
+    const { title, content, image } = req.body;
+
+    if (!title && !content) {
+        return res.status(400).json({ message: '제목과 내용을 입력해주세요.' });
     }
-    else{
-        res.status(404).json({message: "존재하지 않는 리소스입니다"})
-    }
+
+    const updatePost = new Post(postId, null, title, content, image).updatePost();
+    res.status(200).send({
+        message: "게시글 수정 성공",
+        data: updatePost
+    });
 }
 
-export { getPosts, getAuthorProfile, getPostDetail, getComments, getLikes };
+function deletePost(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+
+    const postId = parseInt(req.params.post_id);
+
+    const success = Post.deletePost(postId);
+
+    if (!success) {
+        return res.status(404).json({ message: '게시글을 찾을 수 없습니다.' });
+    }
+
+    res.status(200).json({ message: '게시글 삭제 성공' });
+}
+
+export { getPosts, getPostDetail, createPost, updatePost, deletePost };
