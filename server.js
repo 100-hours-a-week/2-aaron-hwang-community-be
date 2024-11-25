@@ -22,17 +22,18 @@ app.use(session({
     secret: SESSION_KEY,
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false }
+    cookie: { secure: false, sameSite: 'none' }
 }));
 app.use(express.static(publicPath));
 app.use(helmet.xssFilter());
-app.options('*',cors())
+app.use(cors())
 app.use('/api/auth', userRouter);
 app.use('/api/posts', postRouter);
 app.use('/api/comments', commentRouter);
 app.use('/api/likes', likeRouter);
 app.use(cors({
     origin: 'http://localhost:3000',
+    credentials: true
 }));
 
 app.listen(port, () => {

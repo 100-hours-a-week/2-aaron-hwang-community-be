@@ -7,11 +7,8 @@ const router = express.Router();
 router.use(bodyParser.json());
 router.use(bodyParser.urlencoded({ extended: true }));
 
-// router.get('/:author_id/author', getCommentAuthor);
 router.post('/:post_id', createComment);
 router.patch('/:comment_id', updateComment);
 router.delete('/:comment_id', deleteComment);
-
-// TODO: 
 
 export default router;
