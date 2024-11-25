@@ -42,11 +42,12 @@ function updateComment(req, res) {
 
 function deleteComment(req, res) {
     const id = parseInt(req.params.comment_id);
+    /* 
     const user_id = req.session.userId
 
     if (!user_id) {
         return res.status(401).json({ message: "권한 없음" })
-    }
+    } */
 
     try {
         Comment.deleteComment(id);
