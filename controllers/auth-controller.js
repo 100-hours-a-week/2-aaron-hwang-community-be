@@ -42,7 +42,7 @@ function signupUser(req, res) {
 
 function getSessionUser (req, res) {
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-    res.setHeader('Access-Control-Allow-Credentials', true);
+    // res.setHeader('Access-Control-Allow-Credentials', true);
 
     if (!req.session.userId) {
         return res.status(401).json({ message: "권한 없음" })
