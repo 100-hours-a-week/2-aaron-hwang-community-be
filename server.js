@@ -26,6 +26,7 @@ app.use(session({
 }));
 app.use(express.static(publicPath));
 app.use(helmet.xssFilter());
+app.options('*',cors())
 app.use('/api/auth', userRouter);
 app.use('/api/posts', postRouter);
 app.use('/api/comments', commentRouter);
@@ -33,7 +34,6 @@ app.use('/api/likes', likeRouter);
 app.use(cors({
     origin: 'http://localhost:3000',
 }));
-
 
 app.listen(port, () => {
     console.log(`Backend Server listening on port ${port}`);
