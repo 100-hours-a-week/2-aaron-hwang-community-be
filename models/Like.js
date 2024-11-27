@@ -58,7 +58,7 @@ class Like {
         likes[likeIndex].updatedAt = new Date();
 
         this.saveLikes(likes);
-        return true;
+        return likes[likeIndex].status;
     }
   }
 
