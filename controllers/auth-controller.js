@@ -71,6 +71,7 @@ function getUserProfile (req, res){
     res.status(200).send({
         message: "조회 성공",
         data: {
+            id: user.id,
             username: user.username,
             profile_img: user.profile_img
         }
