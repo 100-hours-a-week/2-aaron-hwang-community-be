@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import formatDate from '../middleware/formatDate.js';
+import formatDate from '../utils/formatDate.js';
 
 const __dirname = path.resolve();
 

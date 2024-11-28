@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import formatDate from '../middleware/formatDate.js';
+import formatDate from '../utils/formatDate.js';
 import User from './User.js'
 import Comment from './Comment.js'
 import Like from './Like.js'
