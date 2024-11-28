@@ -24,7 +24,7 @@ class User {
 
     static saveUser(users) {
         const dataPath = path.join(__dirname,'.','public','data','users.json');
-        fs.writeFileSync(dataPath, JSON.stringify(users,null,2))
+        fs.writeFileSync(dataPath, JSON.stringify({users},null,2))
     }
     // 이메일과 비밀번호로 로그인 검증하는 메서드
     static login(email, password) {
@@ -47,14 +47,45 @@ class User {
         User.saveUser(users);
     }
 
-    // 사용자 정보 업데이트
-    updateProfile(img, username) {
-      this.profile_img = img;
-      this.username = username;
-      this.updatedAt = new Date();
+    static updateUsername(user_id, newUsername) {
+        const users = this.loadUsers();
+        const user = users.find(user => user.id == user_id);
+
+        if (!user) return false; // 유저가 존재하지 않을 때
+
+        user.username = newUsername;
+        user.updatedAt = new Date();
+        this.saveUser(users);
+        return true;
     }
 
-    // TODO: 비밀번호 암호화, 비밀번호 변경, 회원가입, 비밀번호 업데이트,
+    static updatePassword(user_id, password, newPassword) {
+        const users = this.loadUsers();
+        const user = users.find(user => user.id === user_id && user.password === password);
+
+        if (!user) return false; // 유저가 존재하지 않을 때
+
+        user.password = newPassword; // 비밀번호 암호화는 추후 추가
+        user.updatedAt = new Date();
+
+        this.saveUser(users);
+        return true;
+    }
+
+    static deleteUser(user_id) {
+        let users = this.loadUsers();
+        const userIndex = users.findIndex(user => user.id == user_id);
+
+        if (userIndex === -1) {
+            return false; // 유저가 존재하지 않을 때
+        }
+
+        users.splice(userIndex, 1); // 해당 유저 삭제
+        this.saveUser(users);
+        return true;
+    }
+
+    // TODO: 비밀번호 암호화
   }
   
   export default User;
@@ -75,27 +106,6 @@ function formatDate(timestamp) {
 
     // 최종 포맷 yyyy-mm-dd hh:mm:ss
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
-
-function signup(email, password, profile_img, username, callback) {
-    const sql = 'INSERT INTO user (email, password, profile_img, username, created_at) VALUES (?, ?, ?, ?, ?)';
-    try {
-        // 비밀번호 암호화
-        const hashedPassword = bcrypt.hashSync(password, 10);
-
-        // 사용자 정보 저장
-        const user = { email, password: hashedPassword, profile_img, username };
-        // user.push(user);
-        console.log(`원본 비밀번호: ${password}`);
-        console.log(`암호화된 비밀번호: ${hashedPassword}`);
-        connection.query(sql, [email, hashedPassword, profile_img, username, formatDate(Date.now())], (err, result) => {
-            if (err) throw err;
-            callback(null, result); // 성공 시 삽입 결과 반환
-        });
-    } catch (error) {
-        console.error('회원가입 중 오류 발생:', error);
-    }
-    
 }
 */
 export { User };

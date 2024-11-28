@@ -78,6 +78,49 @@ function getUserProfile (req, res){
     })
 }
 
+function updateUsername (req, res){
+    const user_id = parseInt(req.params.user_id);
+    const username = req.body.username;
+
+    if (!username) {
+        return res.status(400).json({ message: '사용자 이름을 입력해주세요.' });
+    }
+
+    const result = User.updateUsername(user_id, username);
+    if (!result) {
+        return res.status(404).json({ message: '해당 사용자를 찾을 수 없습니다.' });
+    }
+
+    res.status(200).json({ message: '사용자 이름이 성공적으로 변경되었습니다.' });
+}
+
+function updatePassword (req, res){
+    const user_id = parseInt(req.params.user_id);
+    const { password, newPassword1, newPassword2 } = req.body;
+
+    if (newPassword1 != newPassword2) {
+        return res.status(404).json({ message: '비밀번호 확인이 일치하지 않습니다.' });
+    }
+
+    const result = User.updatePassword(user_id, password, newPassword1);
+    if (!result) {
+        return res.status(404).json({ message: '해당 사용자를 찾을 수 없습니다.' });
+    }
+
+    res.status(200).json({ message: '비밀번호가 성공적으로 변경되었습니다.' });
+}
+
+function deleteUser (req, res){
+    const user_id = parseInt(req.params.user_id);
+
+    const result = User.deleteUser(user_id);
+    if (!result) {
+        return res.status(404).json({ message: '해당 사용자를 찾을 수 없습니다.' });
+    }
+
+    res.status(200).json({ message: '회원 탈퇴가 성공적으로 처리되었습니다.' });
+}
+
 function logout(req, res) {
     req.session.destroy(err => {
         if (err) {
@@ -87,4 +130,5 @@ function logout(req, res) {
     });
 };
 
-export { loginUser, signupUser, getSessionUser, getUserProfile, logout };
+export { loginUser, signupUser, getSessionUser, getUserProfile, 
+    updateUsername, updatePassword, deleteUser, logout };
