@@ -6,7 +6,8 @@ import dotenv from 'dotenv';
 import session from 'express-session';
 
 import corsMiddleware from './middlewares/cors.js';
-import userRouter from './routes/auth.js';
+import authRouter from './routes/auth.js';
+import userRouter from './routes/user.js';
 import postRouter from './routes/post.js';
 import commentRouter from './routes/comment.js';
 
@@ -38,8 +39,13 @@ app.use(corsMiddleware);
 
 app.use(express.static(publicPath));
 
-// 라우터 설정ㅈ
-app.use('/api/auth', userRouter);
+// JSON 및 URL 인코딩 데이터 처리
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// 라우터 설정
+app.use('/api/auth', authRouter);
+app.use('/api/users', userRouter);
 app.use('/api/posts', postRouter);
 app.use('/api/comments', commentRouter);
 
