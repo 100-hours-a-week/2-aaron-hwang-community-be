@@ -1,7 +1,7 @@
-//import connection from './db.js';
 import bcrypt from 'bcrypt';
 import fs from 'fs';
 import path from 'path';
+import formatDate from '../middleware/formatDate.js';
 
 const __dirname = path.resolve();
 
@@ -39,11 +39,18 @@ class User {
     addUser() {
         const users = User.loadUsers();
         // 자동 증가 ID 설정
-        console.log(users)
         const maxId = users.length > 0 ? Math.max(...users.map(user => user.id)) : 0;
         const newId = maxId + 1;
 
-        users.push({ id: newId, email: this.email, password: this.password, username: this.username, profile_img: this.profile_img, createdAt: new Date(), updatedAt: new Date() });
+        users.push({ 
+            id: newId, 
+            email: this.email, 
+            password: this.password, 
+            username: this.username, 
+            profile_img: this.profile_img, 
+            createdAt: formatDate(new Date()), 
+            updatedAt: formatDate(new Date())
+        });
         User.saveUser(users);
     }
 
@@ -54,7 +61,7 @@ class User {
         if (!user) return false; // 유저가 존재하지 않을 때
 
         user.username = newUsername;
-        user.updatedAt = new Date();
+        user.updatedAt = formatDate(new Date());
         this.saveUser(users);
         return true;
     }
@@ -66,7 +73,7 @@ class User {
          if (!user) return false; // 유저가 존재하지 않을 때
 
         user.password = newPassword; // 비밀번호 암호화는 추후 추가
-        user.updatedAt = new Date();
+        user.updatedAt = formatDate(new Date());
 
         this.saveUser(users);
         return true;
@@ -88,24 +95,4 @@ class User {
     // TODO: 비밀번호 암호화
   }
   
-  export default User;
-  
-/*
-function formatDate(timestamp) {
-    const date = new Date(timestamp);
-
-    // 연도, 월, 일
-    const year = date.getFullYear();
-    const month = `0${date.getMonth() + 1}`.slice(-2); // 1월은 0부터 시작하므로 +1
-    const day = `0${date.getDate()}`.slice(-2);
-
-    // 시, 분, 초
-    const hours = `0${date.getHours()}`.slice(-2);
-    const minutes = `0${date.getMinutes()}`.slice(-2);
-    const seconds = `0${date.getSeconds()}`.slice(-2);
-
-    // 최종 포맷 yyyy-mm-dd hh:mm:ss
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
-*/
-export { User };
+export default User;

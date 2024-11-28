@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import formatDate from '../middleware/formatDate.js';
 
 const __dirname = path.resolve();
 
@@ -9,8 +10,8 @@ class Like {
         this.post_id = post_id;
         this.author_id = author_id;
         this.status = status || 1;
-        this.createdAt = createdAt|| new Date();
-        this.updatedAt = updatedAt || new Date();
+        this.createdAt = createdAt|| formatDate(new Date());
+        this.updatedAt = updatedAt || formatDate(new Date());
     }
 
     static loadLikes() {
@@ -35,8 +36,8 @@ class Like {
                 post_id: post_id,
                 user_id: user_id,
                 status: 1,
-                createdAt: new Date(),
-                updatedAt: new Date()
+                createdAt: formatDate(new Date()),
+                updatedAt: formatDate(new Date())
             });
             Like.saveLikes(likes);
             return true;
@@ -55,7 +56,7 @@ class Like {
         }
 
         likes[likeIndex].status = likes[likeIndex].status == 1? 0 : 1;
-        likes[likeIndex].updatedAt = new Date();
+        likes[likeIndex].updatedAt = formatDate(new Date());
 
         this.saveLikes(likes);
         return likes[likeIndex].status;

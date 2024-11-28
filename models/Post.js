@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import formatDate from '../middleware/formatDate.js';
 import User from './User.js'
 import Comment from './Comment.js'
 import Like from './Like.js'
@@ -89,8 +90,8 @@ class Post {
             likes: [],
             views: 0,
             comments: [],
-            createdAt: new Date(), 
-            updatedAt: new Date() 
+            createdAt: formatDate(new Date()), 
+            updatedAt: formatDate(new Date()) 
         };
 
         posts.push(newPost);
@@ -107,7 +108,7 @@ class Post {
         post.title = this.title || post.title;
         post.content = this.content || post.content;
         post.image = this.image || post.image;
-        post.updatedAt = new Date();
+        post.updatedAt = formatDate(new Date());
 
         Post.savePosts(posts);
         return true;

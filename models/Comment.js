@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-//import connection from './db.js';
+import formatDate from '../middleware/formatDate.js';
 
 const __dirname = path.resolve();
 
@@ -39,8 +39,8 @@ class Comment {
                 post_id: this.post_id,
                 author_id: this.author_id,
                 content: this.content,
-                createdAt: new Date(), 
-                updatedAt: new Date() 
+                createdAt: formatDate(new Date()), 
+                updatedAt: formatDate(new Date())
             });
             Comment.saveComments(comments);
             return true;
@@ -61,7 +61,7 @@ class Comment {
         comments[commentIndex] = {
             ...comments[commentIndex],
             content: content,
-            updatedAt: new Date()
+            updatedAt: formatDate(new Date())
         };
 
         Comment.saveComments(comments);
