@@ -29,7 +29,6 @@ function loginUser(req, res) {
 
 function signupUser(req, res) {
     const { email, pwd, profile_img, pwd2, username } = req.body;
-    console.log(email)
     try {
         const newUser = new User(email, pwd, username, profile_img, new Date(), new Date());
         newUser.addUser();

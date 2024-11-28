@@ -57,7 +57,6 @@ function createPost(req, res) {
 }
 
 function updatePost(req, res) {
-    console.log("asdasd")
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
 
     const postId = parseInt(req.params.post_id);

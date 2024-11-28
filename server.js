@@ -23,16 +23,18 @@ app.use(session({
     saveUninitialized: true,
     cookie: { secure: false, sameSite: 'none' }
 }));
+app.use(cors({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.static(publicPath));
 app.use(helmet.xssFilter());
 app.use(cors())
 app.use('/api/auth', userRouter);
 app.use('/api/posts', postRouter);
 app.use('/api/comments', commentRouter);
-app.use(cors({
-    origin: 'http://localhost:3000',
-    credentials: true
-}));
+
 
 app.listen(port, () => {
     console.log(`Backend Server listening on port ${port}`);
