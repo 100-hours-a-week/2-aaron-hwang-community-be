@@ -61,9 +61,9 @@ class User {
 
     static updatePassword(user_id, password, newPassword) {
         const users = this.loadUsers();
-        const user = users.find(user => user.id === user_id && user.password === password);
+        const user = users.find(user => user.id == user_id && user.password === password);
 
-        if (!user) return false; // 유저가 존재하지 않을 때
+         if (!user) return false; // 유저가 존재하지 않을 때
 
         user.password = newPassword; // 비밀번호 암호화는 추후 추가
         user.updatedAt = new Date();
