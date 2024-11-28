@@ -2,16 +2,19 @@ import express from 'express';
 import helmet from 'helmet';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import dotenv from 'dotenv';
+import session from 'express-session';
+
+import corsMiddleware from './middlewares/cors.js';
 import userRouter from './routes/auth.js';
 import postRouter from './routes/post.js';
 import commentRouter from './routes/comment.js';
-import cors from 'cors';
-import session from 'express-session';
-import dotenv from 'dotenv';
 
 dotenv.config();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
 const app = express();
 const port = 8000;
 const publicPath = `${__dirname}/public`;
@@ -21,16 +24,21 @@ app.use(session({
     secret: SESSION_KEY,
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false, sameSite: 'none' }
+    cookie: { 
+        secure: false, 
+        sameSite: 'none',
+    },
 }));
-app.use(cors({
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+
+// 보안 헤더 설정
+app.use(helmet());
+
+// CORS 설정
+app.use(corsMiddleware);
+
 app.use(express.static(publicPath));
-app.use(helmet.xssFilter());
-app.use(cors())
+
+// 라우터 설정ㅈ
 app.use('/api/auth', userRouter);
 app.use('/api/posts', postRouter);
 app.use('/api/comments', commentRouter);
