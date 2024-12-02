@@ -1,65 +1,81 @@
-import fs from 'fs';
-import path from 'path';
-import formatDate from '../utils/formatDate.js';
-
-const __dirname = path.resolve();
+import { loadJSON, saveJSON } from '../utils/fsUtils.js';
+import formatDate from '../utils/dateUtils.js';
+import Post from './Post.js';
 
 class Like {
-    constructor (id=null, post_id=null, author_id=null, status, createdAt, updatedAt) {
+    constructor (id=null, post_id=null, user_id=null, status, createdAt, updatedAt) {
         this.id = id;
         this.post_id = post_id;
-        this.author_id = author_id;
+        this.user_id = user_id;
         this.status = status || 1;
         this.createdAt = createdAt|| formatDate(new Date());
         this.updatedAt = updatedAt || formatDate(new Date());
     }
 
     static loadLikes() {
-        const dataPath = path.join(__dirname, 'public', 'data', 'likes.json');
-        const rawData = fs.readFileSync(dataPath);
-        const likes = JSON.parse(rawData).likes;
-        return likes;
+        return loadJSON('likes.json').likes;
     }
 
     static saveLikes(likes) {
-        const dataPath = path.join(__dirname, 'public', 'data', 'likes.json');
-        fs.writeFileSync(dataPath, JSON.stringify({ likes }, null, 2));
+        saveJSON('likes.json', { likes });
     }
 
-    static createLike(post_id, user_id) {
-        try{
-            const likes = Like.loadLikes();
-            const newId = likes.length > 0 ? Math.max(...likes.map(like => like.id)) + 1 : 1;
-            
-            likes.push({ 
-                id: newId, 
-                post_id: post_id,
-                user_id: user_id,
-                status: 1,
-                createdAt: formatDate(new Date()),
-                updatedAt: formatDate(new Date())
-            });
-            Like.saveLikes(likes);
-            return true;
+    static getLikeByPostId (post_id) {
+        const likes = this.loadLikes();
+        return likes.filter(like => like.post_id === post_id && like.status === 1);
+    }
 
-        } catch {
+    static findLike(post_id, user_id) { // 사용되지 않는 메소드
+        const likes = this.loadLikes();
+        return likes.find(like => like.post_id == post_id && like.user_id === user_id);
+    }
+
+    createLike() {
+        if (!Like.isValidPost(this.post_id)) {
             return false;
         }
+
+        const likes = Like.loadLikes();
+        const newId = likes.length > 0 ? Math.max(...likes.map(like => like.id)) + 1 : 1;
+        
+        const newLike = { 
+            id: newId, 
+            post_id: this.post_id,
+            user_id: this.user_id,
+            status: 1,
+            createdAt: formatDate(new Date()),
+            updatedAt: formatDate(new Date())
+        }
+        
+        likes.push(newLike);
+        Like.saveLikes(likes);
+        return true;
+    }
+
+    static isValidPost(postId) {
+        const posts = Post.loadPosts();
+        return posts.some(post => post.id == postId);
     }
 
     static updateLike(post_id, user_id) {
+        if (!Like.isValidPost(post_id)) {
+            return false;
+        }
+        
         const likes = Like.loadLikes();
-        const likeIndex = likes.findIndex(l => l.post_id == post_id && l.user_id == user_id);
+        const like = likes.find(l => l.post_id == post_id && l.user_id == user_id);
 
-        if (likeIndex === -1) {
-            return this.createLike(post_id, user_id);
+        if (!like) {
+            const newLike = new Like(null, post_id, user_id, 1);
+            return newLike.createLike()
         }
 
-        likes[likeIndex].status = likes[likeIndex].status == 1? 0 : 1;
-        likes[likeIndex].updatedAt = formatDate(new Date());
+        like.status = like.status == 1? 0 : 1;
+        like.updatedAt = formatDate(new Date());
 
         this.saveLikes(likes);
-        return likes[likeIndex].status;
+
+        return like;
     }
   }
 

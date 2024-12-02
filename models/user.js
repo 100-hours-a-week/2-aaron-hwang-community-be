@@ -1,30 +1,34 @@
+import { loadJSON, saveJSON } from '../utils/fsUtils.js';
+import formatDate from '../utils/dateUtils.js';
 import bcrypt from 'bcrypt';
-import fs from 'fs';
-import path from 'path';
-import formatDate from '../utils/formatDate.js';
-
-const __dirname = path.resolve();
 
 class User {
-    constructor(email, password, username, profile_img, createdAt, updatedAt) {
+    constructor(id, email, password, username, profile_img, createdAt, updatedAt) {
+        this.id = id;
         this.email = email;
         this.password = password;
         this.username = username;
-        this.profile_img = profile_img;
+        this.profile_img = profile_img || '';
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
     
     static loadUsers() {
-        const dataPath = path.join(__dirname,'.','public','data','users.json');
-        const rawData = fs.readFileSync(dataPath);
-        const users = JSON.parse(rawData).users;
-        return users
+        return loadJSON('users.json').users;
     }
 
     static saveUser(users) {
-        const dataPath = path.join(__dirname,'.','public','data','users.json');
-        fs.writeFileSync(dataPath, JSON.stringify({users},null,2))
+        saveJSON('users.json', { users })
+    }
+
+    static findById(id) {
+        const users = this.loadUsers();
+        return users.find(user => user.id == id);
+    }
+
+    static findByEmail(email) {
+        const users = this.loadUsers();
+        return users.find(user => user.email === email);
     }
 
     static async hashPassword(password) {
@@ -37,46 +41,55 @@ class User {
     }   
 
     static async login(email, password) {
-        const users = this.loadUsers()
-        const user = users.find(u => u.email === email);
+        const user = this.findByEmail(email);
         if (!user) {
             throw new Error('Invalid email');
         }
 
-        const isMatch = await User.comparePassword(password, user.password);
+        const isMatch = await bcrypt.compare(password, user.password);
         if(!isMatch) {
             throw new Error('invalid password')
         }
+
         return user;
     }
 
     async addUser() {
         const users = User.loadUsers();
-        // 자동 증가 ID 설정
-        const maxId = users.length > 0 ? Math.max(...users.map(user => user.id)) : 0;
-        const newId = maxId + 1;
+
+        // 중복 이메일 확인
+        if (users.some(user => user.email === this.email)) {
+            throw new Error("이미 사용 중인 이메일입니다.");
+        }
+
+        const newId = users.length > 0 ? Math.max(...users.map(user => user.id)) + 1 : 1;
         
-        const hashedPassword = await User.hashPassword(this.password)
-        users.push({ 
+        // 비밀번호 해싱
+        const hashedPassword = await bcrypt.hash(this.password, 10);
+
+        const newUser = {
             id: newId, 
             email: this.email, 
             password: hashedPassword, 
             username: this.username, 
             profile_img: this.profile_img, 
-            createdAt: formatDate(new Date()), 
-            updatedAt: formatDate(new Date())
-        });
+            createdAt: this.createdAt, 
+            updatedAt: this.updatedAt
+        }
+
+        users.push(newUser);
         User.saveUser(users);
     }
 
-    static updateUsername(user_id, newUsername) {
+    static updateUsername(id, newUsername) {
         const users = this.loadUsers();
-        const user = users.find(user => user.id == user_id);
+        const user = users.find(u => u.id === id);
 
         if (!user) return false; // 유저가 존재하지 않을 때
 
         user.username = newUsername;
         user.updatedAt = formatDate(new Date());
+        
         this.saveUser(users);
         return true;
     }
@@ -87,8 +100,12 @@ class User {
 
         if (!user) return false; // 유저가 존재하지 않을 때
 
-        const hashedPassword = await this.hashPassword(newPassword);
-        user.password = newPassword; // 비밀번호 암호화는 추후 추가
+        const isMatch = await bcrypt.compare(password, user.password);
+        if(!isMatch) {
+            throw new Error('invalid password')
+        }
+
+        user.password = await bcrypt.hash(newPassword, 10); // 비밀번호 암호화는 추후 추가
         user.updatedAt = formatDate(new Date());
 
         this.saveUser(users);
@@ -99,16 +116,12 @@ class User {
         let users = this.loadUsers();
         const userIndex = users.findIndex(user => user.id == user_id);
 
-        if (userIndex === -1) {
-            return false; // 유저가 존재하지 않을 때
-        }
+        if (userIndex === -1) return false; // 유저가 존재하지 않을 때
 
         users.splice(userIndex, 1); // 해당 유저 삭제
         this.saveUser(users);
         return true;
     }
-
-    // TODO: 비밀번호 암호화
-  }
+}
   
 export default User;

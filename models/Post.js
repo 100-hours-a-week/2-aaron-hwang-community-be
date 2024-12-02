@@ -1,11 +1,8 @@
-import fs from 'fs';
-import path from 'path';
-import formatDate from '../utils/formatDate.js';
+import { loadJSON, saveJSON } from '../utils/fsUtils.js';
+import formatDate from '../utils/dateUtils.js';
 import User from './User.js'
 import Comment from './Comment.js'
 import Like from './Like.js'
-
-const __dirname = path.resolve();
 
 class Post {
     constructor(id, author_id, title, content, image, likes, views, comments, createdAt, updatedAt) {
@@ -22,9 +19,7 @@ class Post {
     }
 
     static loadPosts() {
-        const dataPath = path.join(__dirname, 'public', 'data', 'posts.json');
-        const rawData = fs.readFileSync(dataPath);
-        const posts = JSON.parse(rawData).posts;
+        const posts = loadJSON('posts.json').posts;
         const users = User.loadUsers();
         const comments = Comment.loadComments();
         const likes = Like.loadLikes();
@@ -41,8 +36,7 @@ class Post {
     }
 
     static savePosts(posts) {
-        const dataPath = path.join(__dirname, 'public', 'data', 'posts.json');
-        fs.writeFileSync(dataPath, JSON.stringify({ posts }, null, 2));
+        saveJSON('posts.json', { posts });
     }
 
     static findById(id) {
@@ -57,7 +51,6 @@ class Post {
         if (!post) return false;
         
         post.views += 1;
-        
         this.savePosts(posts);
         return true;
 
@@ -67,17 +60,18 @@ class Post {
         let posts = this.loadPosts();
         const postIndex = posts.findIndex(post => post.id === id);
 
-        if (postIndex === -1) {
-            return false;
-        }
+        if (postIndex === -1) return false;
 
         posts.splice(postIndex, 1);
         this.savePosts(posts);
-
         return true;
     }
     
     createPost() {
+        if (!this.title || !this.content) {
+            throw new Error('제목, 내용은 필수 입력 사항입니다.');
+        }
+
         const posts = Post.loadPosts();
         const newId = posts.length > 0 ? Math.max(...posts.map(post => post.id)) + 1 : 1;
 

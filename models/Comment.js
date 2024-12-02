@@ -1,8 +1,6 @@
-import fs from 'fs';
-import path from 'path';
-import formatDate from '../utils/formatDate.js';
-
-const __dirname = path.resolve();
+import { loadJSON, saveJSON } from '../utils/fsUtils.js';
+import formatDate from '../utils/dateUtils.js';
+import Post from './Post.js';
 
 class Comment {
     constructor (id=null, post_id=null, author_id=null, content, createdAt, updatedAt) {
@@ -15,70 +13,70 @@ class Comment {
     }
 
     static loadComments() {
-        const dataPath = path.join(__dirname, 'public', 'data', 'comments.json');
-        const rawData = fs.readFileSync(dataPath);
-        const comments = JSON.parse(rawData).comments;
-        return comments;
+        return loadJSON('comments.json').comments;
     }
 
     static saveComments(comments) {
-        const dataPath = path.join(__dirname, 'public', 'data', 'comments.json');
-        fs.writeFileSync(dataPath, JSON.stringify({ comments }, null, 2));
+        saveJSON('comments.json', { comments });
+    }
+
+    static getCommentByPostId(post_id) {
+        const comments = this.loadComments();
+        return comments.filter(comment => comment.post_id === post_id);
     }
 
     createComment() {
         if (!this.content) {
             return { success: false, error: '내용이 빈칸이 될 수 없습니다.' };
         }
-        try{
-            const comments = Comment.loadComments();
-            const newId = comments.length > 0 ? Math.max(...comments.map(comment => comment.id)) + 1 : 1;
+       
+        const comments = Comment.loadComments();
+        const newId = comments.length > 0 ? Math.max(...comments.map(comment => comment.id)) + 1 : 1;
 
-            comments.push({ 
-                id: newId, 
-                post_id: this.post_id,
-                author_id: this.author_id,
-                content: this.content,
-                createdAt: formatDate(new Date()), 
-                updatedAt: formatDate(new Date())
-            });
-            Comment.saveComments(comments);
-            return true;
-
-        } catch {
-            return false;
+        const newComment = { 
+            id: newId, 
+            post_id: this.post_id,
+            author_id: this.author_id,
+            content: this.content,
+            createdAt: formatDate(new Date()), 
+            updatedAt: formatDate(new Date())
         }
+        
+        comments.push(newComment);
+        Comment.saveComments(comments);
+        return newComment;
+    }
+
+    static isValidPost(postId) {
+        const posts = Post.loadPosts();
+        return posts.some(post => post.id == postId);
     }
 
     static updateComment(id, content) {
-        const comments = Comment.loadComments();
-        const commentIndex = comments.findIndex(c => c.id == id);
-
-        if (commentIndex === -1) {
+        if (!content) {
             return false;
         }
 
-        comments[commentIndex] = {
-            ...comments[commentIndex],
-            content: content,
-            updatedAt: formatDate(new Date())
-        };
+        const comments = Comment.loadComments();
+        const comment = comments.find(c => c.id == id);
 
-        Comment.saveComments(comments);
-        return true;
+        if (!comment) return false;
+
+        comment.content = content;
+        comment.updatedAt = formatDate(new Date());
+        
+        this.saveComments(comments);
+        return comment;
     }
 
     static deleteComment(id) {
-        let comments = this.loadComments();
+        const comments = this.loadComments();
         const commentIndex = comments.findIndex(c => c.id === id);
 
-        if (commentIndex === -1) {
-            return true;
-        }
+        if (commentIndex === -1) return true;
 
         comments.splice(commentIndex, 1);
         this.saveComments(comments);
-
         return true;
     }
   }
