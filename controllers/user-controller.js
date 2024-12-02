@@ -24,8 +24,7 @@ function getSessionUser (req, res) {
 function getUserProfile (req, res) {
     try {
         const userId = parseInt(req.params.user_id);
-        const users = User.loadUsers();
-        const user = users.find(u => u.id == userId)
+        const user = User.findById(userId);
 
         if(!user){
             return res.status(404).json({message: "해당 유저 없음"});

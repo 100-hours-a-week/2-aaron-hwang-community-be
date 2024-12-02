@@ -35,7 +35,7 @@ async function signupUser(req, res) {
         }
 
         // 사용자 생성
-        const newUser = new User(email, pwd, username, profile_img, new Date(), new Date());
+        const newUser = new User(null, email, pwd, username, profile_img, new Date(), new Date());
         await newUser.addUser();
 
         return res.status(201).json({ message: '회원가입 성공!' });

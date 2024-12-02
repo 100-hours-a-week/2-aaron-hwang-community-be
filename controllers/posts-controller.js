@@ -47,11 +47,11 @@ function createPost(req, res) {
         const { title, content, image } = req.body;
         const authorId = req.session.userId;
 
-        if (!title || !content || !authorId) {
-            return res.status(400).json({ message: '제목, 내용, 작성자는 필수입니다.' });
+        if (!title || !content) {
+            return res.status(400).json({ message: '제목, 내용은 필수입니다.' });
         }
 
-        const post = new Post(null, title, content, authorId, image);
+        const post = new Post(null, authorId, title, content, image);
         const result = post.createPost();
         if (!result) {
             return res.status(500).json({ message: '게시글 생성 중 오류가 발생했습니다.' });

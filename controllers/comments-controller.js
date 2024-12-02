@@ -1,20 +1,26 @@
 import Comment from '../models/Comment.js';
 
-function createComment(req, res) {
+async function createComment(req, res) {
     try {
-        const { commentContent } = req.body;
+        const { commentContent, userId } = req.body; // 임시로 userId는 body에서 받아옴
         const postId = parseInt(req.params.post_id);
         /* const userId = req.session.userId;
         if (!userId) {
             return res.status(401).json({ message: "권한 없음" })
         } */
-        
+
+        // 유효성 검증 - 없는 게시글
+       const isValidPost = await Comment.isValidPost(postId);
+       if (!isValidPost) {
+           return res.status(404).json({ message: '존재하지 않는 게시글입니다' });
+       }
+
         // 필수 데이터 검증
         if (!commentContent) {
             return res.status(400).json({ message: "댓글 내용은 필수입니다." });
         }
         
-        const newComment = new Comment(null, postId, 1, commentContent); // 임시로 author_id는 1로 설정
+        const newComment = new Comment(null, postId, userId, commentContent); 
         const result = newComment.createComment();
         if(!result) {
             return res.status(500).json({ message: "댓글 생성 중 오류가 발생했습니다." });
@@ -26,10 +32,10 @@ function createComment(req, res) {
     }
 }
 
-function updateComment(req, res) {    
+async function updateComment(req, res) {    
     try {
         const commentId =  parseInt(req.params.comment_id);
-        const { commentContent } = req.body;
+        const { commentContent, userId } = req.body; // 임시로 userId는 body에서 받아옴
         /* const userId = req.session.userId
         if (!userId) {
             return res.status(401).json({ message: "권한 없음" })

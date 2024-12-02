@@ -1,10 +1,9 @@
 import Like from '../models/Like.js';
-import Post from '../models/Post.js';
 
 async function updateLike(req, res) {
     try {
         const postId = parseInt(req.params.post_id);
-        const userId = req.body.userId; // 임시로 body에서 받아옴
+        const userId = parseInt(req.body.userId); // 임시로 body에서 받아옴
         /*
         if (!userId) {
             return res.status(401).json({ message: "로그인이 필요합니다" });
@@ -21,7 +20,7 @@ async function updateLike(req, res) {
         const status = Like.updateLike(postId, userId);
         
         // 좋아요 수 계산
-        const likeCount = Like.getLikeCount(postId);
+        const likeCount = Like.getLikeByPostId(postId).length;
 
         return res.status(200).json({ 
             data: {
