@@ -1,4 +1,4 @@
-function formatDate(date) {
+export default function formatDate(date) {
     const d = new Date(date);
     const year = d.getFullYear();
     const month = `0${d.getMonth() + 1}`.slice(-2); // 월은 0부터 시작하므로 +1
@@ -9,5 +9,3 @@ function formatDate(date) {
 
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
-
-export default formatDate;
