@@ -3,13 +3,12 @@ import Like from '../models/Like.js';
 async function updateLike(req, res) {
     try {
         const postId = parseInt(req.params.post_id);
-        const userId = parseInt(req.body.userId); // 임시로 body에서 받아옴
-        /*
+        const userId = req.session.userId;
+        
         if (!userId) {
             return res.status(401).json({ message: "로그인이 필요합니다" });
         }
-        */
-
+       
         // 유효성 검증 - 없는 게시글에 좋아요
         const isValidPost = await Like.isValidPost(postId);
         if (!isValidPost) {
@@ -17,10 +16,10 @@ async function updateLike(req, res) {
         }
 
         // 좋아요 토글
-        const status = Like.updateLike(postId, userId);
+        const status = await Like.updateLike(postId, userId);
         
         // 좋아요 수 계산
-        const likeCount = Like.getLikeByPostId(postId).length;
+        const likeCount = await Like.getLikeByPostId(postId).length;
 
         return res.status(200).json({ 
             data: {

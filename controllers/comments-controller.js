@@ -2,12 +2,12 @@ import Comment from '../models/Comment.js';
 
 async function createComment(req, res) {
     try {
-        const { commentContent, userId } = req.body; // 임시로 userId는 body에서 받아옴
+        const { commentContent } = req.body; 
         const postId = parseInt(req.params.post_id);
-        /* const userId = req.session.userId;
+        const userId = req.session.userId;
         if (!userId) {
-            return res.status(401).json({ message: "권한 없음" })
-        } */
+            return res. status(401).json({ message: "권한 없음" })
+        }
 
         // 유효성 검증 - 없는 게시글
        const isValidPost = await Comment.isValidPost(postId);
@@ -21,7 +21,8 @@ async function createComment(req, res) {
         }
         
         const newComment = new Comment(null, postId, userId, commentContent); 
-        const result = newComment.createComment();
+        console.log(newComment)
+        const result = await newComment.createComment();
         if(!result) {
             return res.status(500).json({ message: "댓글 생성 중 오류가 발생했습니다." });
         }
@@ -35,12 +36,12 @@ async function createComment(req, res) {
 async function updateComment(req, res) {    
     try {
         const commentId =  parseInt(req.params.comment_id);
-        const { commentContent, userId } = req.body; // 임시로 userId는 body에서 받아옴
-        /* const userId = req.session.userId
+        const { commentContent } = req.body; 
+        const userId = req.session.userId
         if (!userId) {
             return res.status(401).json({ message: "권한 없음" })
         }
-        */
+       
 
         // 필수 데이터 검증
         if (!commentContent) {
@@ -61,12 +62,11 @@ async function updateComment(req, res) {
 function deleteComment(req, res) {
     try {
         const commentId = parseInt(req.params.comment_id);
-        /* 
         const userId = req.session.userId
 
         if (!userId) {
             return res.status(401).json({ message: "권한 없음" })
-        } */
+        }
 
         const result = Comment.deleteComment(commentId);
         if (!result) {
