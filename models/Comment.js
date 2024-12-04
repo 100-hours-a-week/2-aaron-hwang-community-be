@@ -1,5 +1,5 @@
-import { loadJSON, saveJSON } from '../utils/fsUtils.js';
 import formatDate from '../utils/dateUtils.js';
+import { dbPool } from '../utils/dbUtils.js';
 import Post from './Post.js';
 
 class Comment {
@@ -12,72 +12,67 @@ class Comment {
         this.updatedAt = updatedAt;
     }
 
-    static loadComments() {
-        return loadJSON('comments.json').comments;
+    static async loadComments() {
+        const query = 'SELECT * FROM comments';
+        const [rows] = await dbPool.execute(query);
+        return rows;
     }
 
-    static saveComments(comments) {
-        saveJSON('comments.json', { comments });
+    static async getCommentByPostId(post_id) {
+        const query = 'SELECT * FROM comments WHERE post_id = ? ORDER BY created_at DESC';
+        const [rows] = await dbPool.execute(query, [post_id]);
+        return rows;
     }
 
-    static getCommentByPostId(post_id) {
-        const comments = this.loadComments();
-        return comments.filter(comment => comment.post_id === post_id);
-    }
+    async createComment() {
+        try {
+            if (!this.content) {
+                return { success: false, error: '내용이 빈칸이 될 수 없습니다.' };
+            }
 
-    createComment() {
-        if (!this.content) {
-            return { success: false, error: '내용이 빈칸이 될 수 없습니다.' };
+            const query = `
+                INSERT INTO comments (post_id, author_id, content, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+            `;
+            const now = formatDate(new Date());
+            const [result] = await dbPool.execute(query, [
+                this.post_id,
+                this.author_id,
+                this.content,
+                now,
+                now
+            ]);
+            return result.insertId;
+        } catch (error) {
+            return false;
         }
-       
-        const comments = Comment.loadComments();
-        const newId = comments.length > 0 ? Math.max(...comments.map(comment => comment.id)) + 1 : 1;
-
-        const newComment = { 
-            id: newId, 
-            post_id: this.post_id,
-            author_id: this.author_id,
-            content: this.content,
-            createdAt: formatDate(new Date()), 
-            updatedAt: formatDate(new Date())
-        }
-        
-        comments.push(newComment);
-        Comment.saveComments(comments);
-        return newComment;
     }
 
-    static isValidPost(postId) {
-        const posts = Post.loadPosts();
-        return posts.some(post => post.id == postId);
+    static async isValidPost(postId) {
+        const post = await Post.findById(postId);
+        if (!post) return false;
+        return true;
     }
 
-    static updateComment(id, content) {
+    static async updateComment(id, content) {
         if (!content) {
             return false;
         }
 
-        const comments = Comment.loadComments();
-        const comment = comments.find(c => c.id == id);
+        const query = `
+            UPDATE comments 
+            SET content = ?, updated_at = ?
+            WHERE id = ?
+        `;
+        const [result] = await dbPool.execute(query, [content, formatDate(new Date()), id]);
 
-        if (!comment) return false;
-
-        comment.content = content;
-        comment.updatedAt = formatDate(new Date());
-        
-        this.saveComments(comments);
-        return comment;
+        return result.affectedRows > 0
     }
 
-    static deleteComment(id) {
-        const comments = this.loadComments();
-        const commentIndex = comments.findIndex(c => c.id === id);
-
-        if (commentIndex === -1) return true;
-
-        comments.splice(commentIndex, 1);
-        this.saveComments(comments);
-        return true;
+    static async deleteComment(id) {
+        const query = `DELETE FROM comments WHERE id = ?`;
+        const [result] = await dbPool.execute(query, [id]);
+        return result.affectedRows > 0;
     }
   }
 

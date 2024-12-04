@@ -1,4 +1,4 @@
-import { loadJSON, saveJSON } from '../utils/fsUtils.js';
+import { dbPool } from '../utils/dbUtils.js';
 import formatDate from '../utils/dateUtils.js';
 import Post from './Post.js';
 
@@ -12,70 +12,83 @@ class Like {
         this.updatedAt = updatedAt || formatDate(new Date());
     }
 
-    static loadLikes() {
-        return loadJSON('likes.json').likes;
+    static async loadLikes() {
+        const query = 'SELECT * FROM likes WHERE status = 1';
+        const [rows] = await dbPool.execute(query);
+        return rows;
     }
 
-    static saveLikes(likes) {
-        saveJSON('likes.json', { likes });
+    static async getLikeByPostId (post_id) {
+        const query = `
+            SELECT * FROM likes
+            WHERE post_id = ? AND status = 1
+        `;
+        const [rows] = await dbPool.execute(query, [post_id]);
+
+        return rows;
     }
 
-    static getLikeByPostId (post_id) {
-        const likes = this.loadLikes();
-        return likes.filter(like => like.post_id === post_id && like.status === 1);
+    static async isValidPost(post_id) {
+        const query = `
+            SELECT COUNT(*) as count FROM posts
+            WHERE id = ?
+        `;
+        const [rows] = await dbPool.execute(query, [post_id]);
+        return rows[0].count > 0;
     }
 
-    static findLike(post_id, user_id) { // 사용되지 않는 메소드
-        const likes = this.loadLikes();
-        return likes.find(like => like.post_id == post_id && like.user_id === user_id);
+    static async exsistLike(post_id, user_id) {
+        const query = `
+            SELECT * FROM likes
+            WHERE post_id = ? AND user_id = ?
+        `;
+        const [rows] = await dbPool.execute(query, [post_id, user_id]);
+        return rows.length > 0 ? rows[0] : null;
     }
 
-    createLike() {
-        if (!Like.isValidPost(this.post_id)) {
+
+    async createLike() {
+        try {            
+            const query = `
+                INSERT INTO likes (post_id, user_id, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+            `;
+            const now = formatDate(new Date())
+            const [result] = await dbPool.execute(query, [
+                this.post_id,
+                this.user_id,
+                this.status,
+                now,
+                now
+            ]);
+
+            return result.affectedRows > 0;
+        } catch {
             return false;
         }
-
-        const likes = Like.loadLikes();
-        const newId = likes.length > 0 ? Math.max(...likes.map(like => like.id)) + 1 : 1;
-        
-        const newLike = { 
-            id: newId, 
-            post_id: this.post_id,
-            user_id: this.user_id,
-            status: 1,
-            createdAt: formatDate(new Date()),
-            updatedAt: formatDate(new Date())
-        }
-        
-        likes.push(newLike);
-        Like.saveLikes(likes);
-        return true;
     }
 
-    static isValidPost(postId) {
-        const posts = Post.loadPosts();
-        return posts.some(post => post.id == postId);
-    }
+    static async updateLike(post_id, user_id) {        
+        const existingLike = await Like.exsistLike(post_id, user_id);
 
-    static updateLike(post_id, user_id) {
-        if (!Like.isValidPost(post_id)) {
-            return false;
-        }
-        
-        const likes = Like.loadLikes();
-        const like = likes.find(l => l.post_id == post_id && l.user_id == user_id);
-
-        if (!like) {
+        if (!existingLike) {
             const newLike = new Like(null, post_id, user_id, 1);
-            return newLike.createLike()
+            return await newLike.createLike();
         }
 
-        like.status = like.status == 1? 0 : 1;
-        like.updatedAt = formatDate(new Date());
+        const newStatus = existingLike.status === 1 ? 0 : 1;
+        const query = `
+            UPDATE likes
+            SET status = ?, updated_at = ?
+            WHERE id = ?
+        `;
+        const [result] = await dbPool.execute(query, [
+            newStatus,
+            formatDate(new Date()),
+            existingLike.id
+        ]);
 
-        this.saveLikes(likes);
-
-        return like;
+        return result.affectedRows > 0 ? newStatus : null;
     }
   }
 
