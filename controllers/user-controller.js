@@ -21,10 +21,10 @@ function getSessionUser (req, res) {
     }
 }
 
-function getUserProfile (req, res) {
+async function getUserProfile (req, res) {
     try {
         const userId = parseInt(req.params.user_id);
-        const user = User.findById(userId);
+        const user = await User.findById(userId);
 
         if(!user){
             return res.status(404).json({message: "해당 유저 없음"});
@@ -43,16 +43,21 @@ function getUserProfile (req, res) {
     }
 }
 
-function updateUsername (req, res) {
+async function updateUsername (req, res) {
     try {
         const userId = parseInt(req.params.user_id);
         const username = req.body.username;
+        const sessionUserId = req.session.userId;
+
+        if (!(userId === sessionUserId)) {
+            return res.status(401).json({ message: "권한 없음" });
+        }
 
         if (!username) {
             return res.status(400).json({ message: '사용자 이름을 입력해주세요.' });
         }
 
-        const result = User.updateUsername(userId, username);
+        const result = await User.updateUsername(userId, username);
         if (!result) {
             return res.status(404).json({ message: '해당 사용자를 찾을 수 없습니다.' });
         }
@@ -64,16 +69,21 @@ function updateUsername (req, res) {
     }
 }
 
-function updatePassword (req, res){
+async function updatePassword (req, res){
     try {
         const userId = parseInt(req.params.user_id);
         const { password, newPassword1, newPassword2 } = req.body;
+        const sessionUserId = req.session.userId;
+
+        if (!(userId === sessionUserId)) {
+            return res.status(401).json({ message: "권한 없음" });
+        }
 
         if (newPassword1 != newPassword2) {
             return res.status(404).json({ message: '비밀번호 확인이 일치하지 않습니다.' });
         }
 
-        const result = User.updatePassword(userId, password, newPassword1);
+        const result = await User.updatePassword(userId, password, newPassword1);
         if (!result) {
             return res.status(404).json({ message: '해당 사용자를 찾을 수 없습니다.' });
         }
@@ -87,7 +97,12 @@ function updatePassword (req, res){
 function deleteUser (req, res){
     try {    
         const userId = parseInt(req.params.user_id);
+        const sessionUserId = req.session.userId;
 
+        if (!(userId === sessionUserId)) {
+            return res.status(401).json({ message: "권한 없음" });
+        }
+        
         const result = User.deleteUser(userId);
         if (!result) {
             return res.status(404).json({ message: '해당 사용자를 찾을 수 없습니다.' });

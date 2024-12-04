@@ -13,13 +13,16 @@ async function loginUser(req, res) {
         req.session.userId = user.id;
         req.session.email = user.email;
         req.session.profile_img = user.profile_img;
-
-        return res.status(200).json({
-            message: "로그인 성공",
-            data: {
-                user_id: user.id,
-            }
+        req.session.save(err => {
+            if (err) throw err;
+            return res.status(200).json({
+                message: "로그인 성공",
+                data: {
+                    user_id: user.id,
+                }
+            });
         });
+        
     } catch(error) {
         return res.status(500).json({ error: error.message });
     }
