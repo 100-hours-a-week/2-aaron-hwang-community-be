@@ -1,8 +1,5 @@
-import { loadJSON, saveJSON } from '../utils/fsUtils.js';
+import { dbPool } from '../utils/dbUtils.js';
 import formatDate from '../utils/dateUtils.js';
-import User from './User.js'
-import Comment from './Comment.js'
-import Like from './Like.js'
 
 class Post {
     constructor(id, author_id, title, content, image, likes, views, comments, createdAt, updatedAt) {
@@ -18,95 +15,117 @@ class Post {
         this.updatedAt = updatedAt;
     }
 
-    static loadPosts() {
-        const posts = loadJSON('posts.json').posts;
-        const users = User.loadUsers();
-        const comments = Comment.loadComments();
-        const likes = Like.loadLikes();
-
-        posts.forEach(post => {
-            post.author = users.find(u => u.id == post.author_id);
-            post.comments = comments.filter(c => c.post_id == post.id);
-            post.likes = likes.filter(l => l.post_id == post.id)
-        }
-        //TODO : author, comments, likes 가져오는 로직 분리
-
-        )
-        return posts;
-    }
-
-    static savePosts(posts) {
-        saveJSON('posts.json', { posts });
-    }
-
-    static findById(id) {
-        const posts = this.loadPosts();
-        return posts.find(post => post.id == id);
-    }
-
-    static incrementView(id) {
-        const posts = this.loadPosts();
-        const post = posts.find(post => post.id == id);
-
-        if (!post) return false;
+    static async loadPosts() {
+        const query = `
+            SELECT posts.*, 
+                   users.username AS author_username, 
+                   users.profile_img AS author_profile_img
+            FROM posts
+            LEFT JOIN users ON posts.author_id = users.id
+        `;
+        const [rows] = await dbPool.execute(query);
         
-        post.views += 1;
-        this.savePosts(posts);
-        return true;
+        for (const post of rows) {
+            post.likes = await Post.getLikesByPostId(post.id);
+            post.comments = await Post.getCommentsByPostId(post.id);
+        }
 
+        return rows;
     }
 
-    static deletePost(id) {
-        let posts = this.loadPosts();
-        const postIndex = posts.findIndex(post => post.id === id);
+    static async findById(id) {
+        const query = `
+            SELECT posts.*, 
+                   users.username AS author_username, 
+                   users.profile_img AS author_profile_img
+            FROM posts
+            LEFT JOIN users ON posts.author_id = users.id
+            WHERE posts.id = ?
+        `;
+        const [rows] = await dbPool.execute(query, [id]);
+        if (rows.length === 0) return null;
 
-        if (postIndex === -1) return false;
+        const post = rows[0];
+        post.likes = await Post.getLikesByPostId(post.id);
+        post.comments = await Post.getCommentsByPostId(post.id);
+        return post;
+    }
 
-        posts.splice(postIndex, 1);
-        this.savePosts(posts);
-        return true;
+    static async incrementView(id) {
+        const query = `UPDATE posts SET views = views + 1 WHERE id = ?`;
+        const [result] = await dbPool.execute(query, [id]);
+        return result.affectedRows > 0; // 업데이트 성공 여부 반환
     }
     
-    createPost() {
+    async createPost() {
         if (!this.title || !this.content) {
             throw new Error('제목, 내용은 필수 입력 사항입니다.');
         }
 
-        const posts = Post.loadPosts();
-        const newId = posts.length > 0 ? Math.max(...posts.map(post => post.id)) + 1 : 1;
+        const query = `
+            INSERT INTO posts (author_id, title, content, image, comments, likes, views, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const now = formatDate(new Date());
+        const [result] = await dbPool.execute(query, [
+            this.author_id,
+            this.title,
+            this.content,
+            this.image,
+            [], // 초기 댓글
+            [], // 초기 좋아요
+            0, // 초기 조회수
+            now,
+            now,
+        ]);
 
-        const newPost = { 
-            id: newId, 
-            title: this.title,
-            content: this.content,
-            image: this.image,
-            author_id: this.author_id,
-            likes: [],
-            views: 0,
-            comments: [],
-            createdAt: formatDate(new Date()), 
-            updatedAt: formatDate(new Date()) 
-        };
-
-        posts.push(newPost);
-        Post.savePosts(posts);
-        return newPost;
+        return result.insertId;
     }
 
-    updatePost() {
-        const posts = Post.loadPosts();
-        const post = posts.find(post => post.id == this.id);
-
-        if (!post) return false;
-
-        post.title = this.title || post.title;
-        post.content = this.content || post.content;
-        post.image = this.image || post.image;
-        post.updatedAt = formatDate(new Date());
-
-        Post.savePosts(posts);
-        return true;
+    async updatePost() {
+        const query = `
+            UPDATE posts
+            SET title = ?, content = ?, image = ?, updated_at = ?
+            WHERE id = ?
+        `;
+        const updatedAt = formatDate(new Date());
+        const [result] = await dbPool.execute(query, [
+            this.title,
+            this.content,
+            this.image,
+            updatedAt,
+            this.id,
+        ]);
+        return result.affectedRows > 0;
     }
+
+    static async deletePost(id) {
+        const query = `DELETE FROM posts WHERE id = ?`;
+        const [result] = await dbPool.execute(query, [id]);
+        return result.affectedRows > 0;
+    }
+
+    // 특정 게시글의 좋아요 가져오기
+    static async getLikesByPostId(postId) {
+        const query = `SELECT * FROM likes WHERE post_id = ? AND status = 1`;
+        const [rows] = await dbPool.execute(query, [postId]);
+        return rows;
+    }
+
+    // 특정 게시글의 댓글 가져오기
+    static async getCommentsByPostId(postId) {
+        const query = `
+            SELECT comments.*, 
+                    users.username AS author_username, 
+                    users.profile_img AS author_profile_img
+            FROM comments
+            LEFT JOIN users ON comments.author_id = users.id
+            WHERE comments.post_id = ?
+            ORDER BY created_at ASC
+        `;
+        const [rows] = await dbPool.execute(query, [postId]);
+        return rows;
+    }    
 }
 
 export default Post;

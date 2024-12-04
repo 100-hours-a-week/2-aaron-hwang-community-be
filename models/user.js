@@ -1,6 +1,6 @@
-import { loadJSON, saveJSON } from '../utils/fsUtils.js';
-import formatDate from '../utils/dateUtils.js';
 import bcrypt from 'bcrypt';
+import formatDate from '../utils/dateUtils.js';
+import { dbPool } from '../utils/dbUtils.js';
 
 class User {
     constructor(id, email, password, username, profile_img, createdAt, updatedAt) {
@@ -13,35 +13,26 @@ class User {
         this.updatedAt = updatedAt;
     }
     
-    static loadUsers() {
-        return loadJSON('users.json').users;
+    static async loadUsers() {
+        const query = 'SELECT * FROM users';
+        const [rows] = await dbPool.execute(query);
+        return rows;
     }
 
-    static saveUser(users) {
-        saveJSON('users.json', { users })
+    static async findById(id) {
+        const query = 'SELECT * FROM users WHERE id = ?';
+        const [rows] = await dbPool.execute(query, [id]);
+        return rows[0] || null;
     }
 
-    static findById(id) {
-        const users = this.loadUsers();
-        return users.find(user => user.id == id);
+    static async findByEmail(email) {
+        const query = 'SELECT * FROM users WHERE email = ?';
+        const [rows] = await dbPool.execute(query, [email]);
+        return rows[0] || null;
     }
-
-    static findByEmail(email) {
-        const users = this.loadUsers();
-        return users.find(user => user.email === email);
-    }
-
-    static async hashPassword(password) {
-        const saltRounds = 10; // 암호화 강도(Not a thief)
-        return await bcrypt.hash(password, saltRounds);
-    }
-
-    static async comparePassword(password, hashedPassword) {
-        return await bcrypt.compare(password, hashedPassword);
-    }   
 
     static async login(email, password) {
-        const user = this.findByEmail(email);
+        const user = await this.findByEmail(email);
         if (!user) {
             throw new Error('Invalid email');
         }
@@ -55,48 +46,49 @@ class User {
     }
 
     async addUser() {
-        const users = User.loadUsers();
-
-        // 중복 이메일 확인
-        if (users.some(user => user.email === this.email)) {
-            throw new Error("이미 사용 중인 이메일입니다.");
+        const existingUser = await User.findByEmail(this.email);
+        if (existingUser) {
+            throw new Error('이미 사용 중인 이메일입니다.');
         }
-
-        const newId = users.length > 0 ? Math.max(...users.map(user => user.id)) + 1 : 1;
-        
+ 
         // 비밀번호 해싱
         const hashedPassword = await bcrypt.hash(this.password, 10);
+        const query = `
+            INSERT INTO users (email, password, username, profile_img, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `;
+        const [result] = await dbPool.execute(query, [
+            this.email,
+            hashedPassword,
+            this.username,
+            this.profile_img,
+            formatDate(new Date()),
+            formatDate(new Date()),
+        ]);
 
-        const newUser = {
-            id: newId, 
-            email: this.email, 
-            password: hashedPassword, 
-            username: this.username, 
-            profile_img: this.profile_img, 
-            createdAt: this.createdAt, 
-            updatedAt: this.updatedAt
-        }
-
-        users.push(newUser);
-        User.saveUser(users);
+        return result.insertId;
     }
 
-    static updateUsername(id, newUsername) {
-        const users = this.loadUsers();
-        const user = users.find(u => u.id === id);
+    static async updateUsername(id, newUsername) {
+        const existingUser = await User.findById(id);
 
-        if (!user) return false; // 유저가 존재하지 않을 때
+        if (!existingUser) return false; // 유저가 존재하지 않을 때
 
-        user.username = newUsername;
-        user.updatedAt = formatDate(new Date());
-        
-        this.saveUser(users);
-        return true;
+        const query = `
+            UPDATE users
+            SET username = ?, updated_at = ?
+            WHERE id = ?
+        `;
+        const [result] = await dbPool.execute(query, [
+            newUsername,
+            formatDate(new Date()),
+            id,
+        ]);
+        return result.affectedRows > 0;
     }
 
     static async updatePassword(user_id, password, newPassword) {
-        const users = this.loadUsers();
-        const user = users.find(user => user.id == user_id && user.password === password);
+        const user = await User.findById(user_id);
 
         if (!user) return false; // 유저가 존재하지 않을 때
 
@@ -105,22 +97,33 @@ class User {
             throw new Error('invalid password')
         }
 
-        user.password = await bcrypt.hash(newPassword, 10); // 비밀번호 암호화는 추후 추가
+        const hashedPassword = await bcrypt.hash(newPassword, 10); // 비밀번호 암호화는 추후 추가
         user.updatedAt = formatDate(new Date());
 
-        this.saveUser(users);
-        return true;
+        const query = `
+            UPDATE users
+            SET password = ?, updated_at = ?
+            WHERE id = ?
+        `;
+        const [result] = await dbPool.execute(query, [
+            hashedPassword,
+            formatDate(new Date()),
+            id,
+        ]);
+        return result.affectedRows > 0;
     }
 
-    static deleteUser(user_id) {
-        let users = this.loadUsers();
-        const userIndex = users.findIndex(user => user.id == user_id);
+    static async deleteUser(user_id) {
+        const user = await User.findById(id);
 
-        if (userIndex === -1) return false; // 유저가 존재하지 않을 때
+        if (!user) return false; // 유저가 존재하지 않을 때
 
-        users.splice(userIndex, 1); // 해당 유저 삭제
-        this.saveUser(users);
-        return true;
+        const query = `
+            DELETE FROM users
+            WHERE id = ?
+        `;
+        const [result] = await dbPool.execute(query, [id]);
+        return result.affectedRows > 0;
     }
 }
   
