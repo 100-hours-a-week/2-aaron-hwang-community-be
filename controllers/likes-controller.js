@@ -19,7 +19,8 @@ async function updateLike(req, res) {
         const status = await Like.updateLike(postId, userId);
         
         // 좋아요 수 계산
-        const likeCount = await Like.getLikeByPostId(postId).length;
+        const likeList = await Like.getLikeByPostId(postId)
+        const likeCount = likeList.length;
 
         return res.status(200).json({ 
             data: {
