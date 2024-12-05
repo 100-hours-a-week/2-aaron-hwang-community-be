@@ -39,7 +39,12 @@ async function signupUser(req, res) {
 
         // 사용자 생성
         const newUser = new User(null, email, pwd, username, profile_img, new Date(), new Date());
-        await newUser.addUser();
+        const createdUser = await newUser.addUser();
+        console.log(createdUser)
+        // 세션 설정
+        req.session.userId = createdUser.id;
+        req.session.email = createdUser.email;
+        req.session.profile_img = createdUser.profile_img;
 
         return res.status(201).json({ message: '회원가입 성공!' });
     } catch(error) {

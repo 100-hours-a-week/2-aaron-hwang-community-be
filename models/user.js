@@ -66,7 +66,11 @@ class User {
             formatDate(new Date()),
         ]);
 
-        return result.insertId;
+        return {
+            id: result.insertId,
+            email: this.email,
+            profile_img: this.profile_img
+        };
     }
 
     static async updateUsername(id, newUsername) {
