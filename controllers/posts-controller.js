@@ -100,7 +100,7 @@ async function deletePost(req, res) {
     try {
         const postId = parseInt(req.params.post_id);
         const userId = req.session.userId;
-        const post = Post.findById(postId);
+        const post = await Post.findById(postId);
 
         if (!post) {
             return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
