@@ -1,4 +1,6 @@
 import Post from '../models/Post.js'
+import Like from '../models/Like.js'
+import Comment from '../models/Comment.js'
 
 async function getPosts(req, res){
     try {    
@@ -94,7 +96,7 @@ function updatePost(req, res) {
 
 }
 
-function deletePost(req, res) {
+async function deletePost(req, res) {
     try {
         const postId = parseInt(req.params.post_id);
         const userId = req.session.userId;
@@ -107,6 +109,18 @@ function deletePost(req, res) {
         if (post.author_id !== userId) {
             return res.status(401).json({ message: "권한 없음" });
         }
+
+        
+        const likes = await Like.getLikeByPostId(postId);
+        if (likes) {
+            likes.forEach(async like => {
+                await Like.deleteLike(like.id);
+        });}
+        const comments = await Comment.getCommentByPostId(postId);
+        if (comments){
+            comments.forEach(async comment => {
+                await Comment.deleteComment(comment.id);
+        });}
 
         const result = Post.deletePost(postId);
         if (!result){
