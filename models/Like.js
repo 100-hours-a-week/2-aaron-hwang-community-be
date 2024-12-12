@@ -28,6 +28,19 @@ class Like {
         return rows;
     }
 
+    static async findByUserId(userId) {
+        const query = `
+            SELECT *
+            FROM likes
+            WHERE likes.user_id = ?
+        `;
+        const [rows] = await dbPool.execute(query, [userId]);
+        if (rows.length === 0) return null;
+
+        const likes = rows;
+        return likes;
+    }
+
     static async isValidPost(post_id) {
         const query = `
             SELECT COUNT(*) as count FROM posts
@@ -89,6 +102,12 @@ class Like {
         ]);
 
         return result.affectedRows > 0 ? newStatus : null;
+    }
+
+    static async deleteLike(id) {
+        const query = `DELETE FROM likes WHERE id = ?`;
+        const [result] = await dbPool.execute(query, [id]);
+        return result.affectedRows > 0;
     }
   }
 

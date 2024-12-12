@@ -52,6 +52,20 @@ class Post {
         return post;
     }
 
+    static async findByUserId(userId) {
+        const query = `
+            SELECT *
+            FROM posts
+            WHERE posts.author_id = ?
+        `;
+        const [rows] = await dbPool.execute(query, [userId]);
+        if (rows.length === 0) return null;
+
+        const post = rows;
+        
+        return post;
+    }
+
     static async incrementView(id) {
         const query = `UPDATE posts SET views = views + 1 WHERE id = ?`;
         const [result] = await dbPool.execute(query, [id]);

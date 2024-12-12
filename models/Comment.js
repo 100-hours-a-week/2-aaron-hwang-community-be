@@ -48,6 +48,19 @@ class Comment {
         }
     }
 
+    static async findByUserId(userId) {
+        const query = `
+            SELECT *
+            FROM comments
+            WHERE comments.author_id = ?
+        `;
+        const [rows] = await dbPool.execute(query, [userId]);
+        if (rows.length === 0) return null;
+
+        const comments = rows;
+        return comments;
+    }
+
     static async isValidPost(postId) {
         const post = await Post.findById(postId);
         if (!post) return false;
