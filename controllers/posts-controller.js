@@ -10,7 +10,7 @@ async function getPosts(req, res){
 
         return res.status(200).json({
             message: "게시글 목록 조회 성공",
-            data: posts
+            data: posts.sort((a, b) => b.id - a.id)
         });
     } catch (error) {
         return res.status(500).json({ error: error.message });
@@ -43,8 +43,9 @@ async function getPostDetail(req, res) {
 
 function createPost(req, res) {
     try {
-        const { title, content, image } = req.body;
+        const { title, content } = req.body;
         const authorId = req.session.userId;
+        const image = req.file?.buffer;
 
         if (!title || !content) {
             return res.status(400).json({ message: '제목, 내용은 필수입니다.' });

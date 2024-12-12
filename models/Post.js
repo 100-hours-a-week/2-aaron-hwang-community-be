@@ -48,6 +48,7 @@ class Post {
         const post = rows[0];
         post.likes = await Post.getLikesByPostId(post.id);
         post.comments = await Post.getCommentsByPostId(post.id);
+        post.comments.sort((a, b) => b.id - a.id)
         return post;
     }
 
