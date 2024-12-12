@@ -6,14 +6,15 @@ function getSessionUser (req, res) {
             return res.status(401).json({ message: "권한 없음" });
         }
 
-        const { userId, email, profile_img } = req.session;
+        const { userId, email, profile_img, username } = req.session;
 
         res.status(200).json({
             message: "화원정보 조회 성공",
             data: {
                 id: userId,
                 email: email,
-                profile_img: profile_img
+                profile_img: profile_img,
+                username: username
             }
         });
     } catch (error) {

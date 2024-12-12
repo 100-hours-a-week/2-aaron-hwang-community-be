@@ -13,6 +13,7 @@ async function loginUser(req, res) {
         req.session.userId = user.id;
         req.session.email = user.email;
         req.session.profile_img = user.profile_img;
+        req.session.username = user.username;
         req.session.save(err => {
             if (err) throw err;
             return res.status(200).json({
@@ -45,6 +46,7 @@ async function signupUser(req, res) {
         req.session.userId = createdUser.id;
         req.session.email = createdUser.email;
         req.session.profile_img = createdUser.profile_img;
+        req.session.username = createdUser.username;
 
         return res.status(201).json({ message: '회원가입 성공!' });
     } catch(error) {
