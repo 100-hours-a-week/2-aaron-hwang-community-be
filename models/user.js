@@ -118,7 +118,7 @@ class User {
     }
 
     static async deleteUser(user_id) {
-        const user = await User.findById(id);
+        const user = await User.findById(user_id);
 
         if (!user) return false; // 유저가 존재하지 않을 때
 
@@ -126,7 +126,7 @@ class User {
             DELETE FROM users
             WHERE id = ?
         `;
-        const [result] = await dbPool.execute(query, [id]);
+        const [result] = await dbPool.execute(query, [user_id]);
         return result.affectedRows > 0;
     }
 }
