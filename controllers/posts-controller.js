@@ -1,6 +1,14 @@
 import Post from '../models/Post.js'
 import Like from '../models/Like.js'
 import Comment from '../models/Comment.js'
+import multer from 'multer'
+import { saveBinaryFile, loadBinaryFile } from '../utils/fsUtils.js'
+
+// Multer 설정
+const upload = multer({
+    storage: multer.memoryStorage(), // 메모리에 바이너리 저장
+    limits: { fileSize: 5 * 1024 * 1024 }, // 파일 크기 제한 (5MB)
+});
 
 async function getPosts(req, res){
     try {    
@@ -34,6 +42,8 @@ async function getPostDetail(req, res) {
             return res.status(404).json({message: "게시글을 찾을 수 없습니다"});
         }
 
+        post.image = loadBinaryFile(post.image.split('\\').pop()).toString('base64');
+
         return res.status(200).json({
             message: "게시글 상세 조회 성공",
             data: post
@@ -47,13 +57,18 @@ function createPost(req, res) {
     try {
         const { title, content } = req.body;
         const authorId = req.session.userId;
-        const image = req.file?.buffer;
 
         if (!title || !content) {
             return res.status(400).json({ message: '제목, 내용은 필수입니다.' });
         }
 
-        const post = new Post(null, authorId, title, content, image);
+        let imagePath = null;
+        if (req.file) {
+            const fileName = `${Date.now()}-${req.file.originalname}`;
+            imagePath = saveBinaryFile(fileName, req.file.buffer); // 파일 저장
+        }
+        
+        const post = new Post(null, authorId, title, content, imagePath);
         const result = post.createPost();
         if (!result) {
             return res.status(500).json({ message: '게시글 생성 중 오류가 발생했습니다.' });
@@ -133,4 +148,4 @@ async function deletePost(req, res) {
     }
 }
 
-export { getPosts, getPostDetail, createPost, updatePost, deletePost };
+export { getPosts, getPostDetail, createPost, updatePost, deletePost, upload };
