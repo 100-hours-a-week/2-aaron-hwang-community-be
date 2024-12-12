@@ -112,7 +112,7 @@ class User {
         const [result] = await dbPool.execute(query, [
             hashedPassword,
             formatDate(new Date()),
-            id,
+            user_id,
         ]);
         return result.affectedRows > 0;
     }
