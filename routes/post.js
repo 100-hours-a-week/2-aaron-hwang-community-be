@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', getPosts);
 router.get('/:post_id', getPostDetail);
 router.post('/', upload.single('image'), createPost);
-router.patch('/:post_id', updatePost);
+router.patch('/:post_id', upload.single('image'), updatePost);
 router.delete('/:post_id', deletePost);
 
 // 좋아요 기능

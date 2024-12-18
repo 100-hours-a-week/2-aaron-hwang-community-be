@@ -2,6 +2,14 @@ import User from '../models/User.js';
 import Post from '../models/Post.js';
 import Like from '../models/Like.js';
 import Comment from '../models/Comment.js';
+import multer from 'multer'
+import { saveBinaryFile, loadBinaryFile } from '../utils/fsUtils.js'
+
+// Multer 설정
+const upload = multer({
+    storage: multer.memoryStorage(), // 메모리에 바이너리 저장
+    limits: { fileSize: 5 * 1024 * 1024 }, // 파일 크기 제한 (5MB)
+});
 
 function getSessionUser (req, res) {
     try {
@@ -39,7 +47,7 @@ async function getUserProfile (req, res) {
             data: {
                 id: user.id,
                 username: user.username,
-                profile_img: user.profile_img
+                profile_img: loadBinaryFile(user.profile_img .split('\\').pop()).toString('base64')
             }
         });
     } catch (error) {
@@ -47,7 +55,7 @@ async function getUserProfile (req, res) {
     }
 }
 
-async function updateUsername (req, res) {
+async function updateUserProfile (req, res) {
     try {
         const userId = parseInt(req.params.user_id);
         const username = req.body.username;
@@ -61,7 +69,13 @@ async function updateUsername (req, res) {
             return res.status(400).json({ message: '사용자 이름을 입력해주세요.' });
         }
 
-        const result = await User.updateUsername(userId, username);
+        let profile_img = req.body.profile_img;;
+        if (req.file) {
+            const fileName = `${Date.now()}-${req.file.originalname}`;
+            profile_img = saveBinaryFile(fileName, req.file.buffer); // 파일 저장
+        }
+
+        const result = await User.updateUserProfile(userId, username, profile_img);
         if (!result) {
             return res.status(404).json({ message: '해당 사용자를 찾을 수 없습니다.' });
         }
@@ -137,4 +151,4 @@ async function deleteUser (req, res){
 }
 
 export { getSessionUser, getUserProfile, 
-    updateUsername, updatePassword, deleteUser };
+    updateUserProfile, updatePassword, deleteUser, upload };

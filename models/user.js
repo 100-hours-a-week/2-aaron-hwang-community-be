@@ -73,19 +73,20 @@ class User {
         };
     }
 
-    static async updateUsername(id, newUsername) {
+    static async updateUserProfile(id, newUsername, newUserImg) {
         const existingUser = await User.findById(id);
 
         if (!existingUser) return false; // 유저가 존재하지 않을 때
 
         const query = `
             UPDATE users
-            SET username = ?, updated_at = ?
+            SET username = ?, updated_at = ?, profile_img = ?
             WHERE id = ?
         `;
         const [result] = await dbPool.execute(query, [
             newUsername,
             formatDate(new Date()),
+            newUserImg,
             id,
         ]);
         return result.affectedRows > 0;

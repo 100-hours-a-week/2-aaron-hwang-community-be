@@ -1,4 +1,12 @@
 import User from '../models/User.js';
+import multer from 'multer'
+import { saveBinaryFile, loadBinaryFile } from '../utils/fsUtils.js'
+
+// Multer 설정
+const upload = multer({
+    storage: multer.memoryStorage(), // 메모리에 바이너리 저장
+    limits: { fileSize: 5 * 1024 * 1024 }, // 파일 크기 제한 (5MB)
+});
 
 async function loginUser(req, res) {
     try{
@@ -12,7 +20,7 @@ async function loginUser(req, res) {
         // 세션 설정
         req.session.userId = user.id;
         req.session.email = user.email;
-        req.session.profile_img = user.profile_img;
+        req.session.profile_img = loadBinaryFile(user.profile_img.split('\\').pop()).toString('base64');
         req.session.username = user.username;
         req.session.save(err => {
             if (err) throw err;
@@ -31,11 +39,20 @@ async function loginUser(req, res) {
 
 async function signupUser(req, res) {
     try {
-        const { email, pwd, pwd2, profile_img, username } = req.body;
+        const { email, pwd, pwd2, username } = req.body;
 
         // 비밀번호 확인
         if (pwd !== pwd2) {
             return res.status(400).json({ message: "비밀번호가 일치하지 않습니다." });
+        }
+
+        let profile_img = null;
+        if (req.file) {
+            const fileName = `${Date.now()}-${req.file.originalname}`;
+            profile_img = saveBinaryFile(fileName, req.file.buffer); // 파일 저장
+        }
+        else {
+            profile_img = 'default_profile.jpg';
         }
 
         // 사용자 생성
@@ -45,7 +62,7 @@ async function signupUser(req, res) {
         // 세션 설정
         req.session.userId = createdUser.id;
         req.session.email = createdUser.email;
-        req.session.profile_img = createdUser.profile_img;
+        req.session.profile_img = loadBinaryFile(createdUser.profile_img.split('\\').pop()).toString('base64');
         req.session.username = createdUser.username;
 
         return res.status(201).json({ message: '회원가입 성공!' });
@@ -64,4 +81,4 @@ function logout(req, res) {
     });
 }
 
-export { loginUser, signupUser, logout };
+export { loginUser, signupUser, logout, upload };

@@ -18,6 +18,15 @@ async function getPosts(req, res){
             res.status(404).json({message: "존재하지 않는 리소스입니다"});
         }
 
+        posts.forEach(post => {
+            try{
+                post.author_profile_img = loadBinaryFile(post.author_profile_img.split('\\').pop()).toString('base64');
+            }
+            catch{
+                post.author_profile_img = null;
+            }
+        })
+        
         return res.status(200).json({
             message: "게시글 목록 조회 성공",
             data: posts.sort((a, b) => b.id - a.id)
@@ -42,7 +51,28 @@ async function getPostDetail(req, res) {
             return res.status(404).json({message: "게시글을 찾을 수 없습니다"});
         }
 
-        post.image = loadBinaryFile(post.image.split('\\').pop()).toString('base64');
+        try {
+            post.image = loadBinaryFile(post.image.split('\\').pop()).toString('base64');
+        }
+        catch {
+            post.image = null
+        }
+
+        try {
+            post.author_profile_img = loadBinaryFile(post.author_profile_img.split('\\').pop()).toString('base64');
+        }
+        catch {
+            post.author_profile_img = null
+        }        
+
+        post.comments.forEach(comment => {
+            try{
+                comment.author_img = loadBinaryFile(comment.author_img.split('\\').pop()).toString('base64');
+            }
+            catch{
+                comment.author_img = null;
+            }
+        })
 
         return res.status(200).json({
             message: "게시글 상세 조회 성공",
@@ -80,12 +110,12 @@ function createPost(req, res) {
     }
 }
 
-function updatePost(req, res) {
+async function updatePost(req, res) {
     try {
         const postId = parseInt(req.params.post_id);
-        const { title, content, image } = req.body;
+        const { title, content } = req.body;
         const userId = req.session.userId;
-        const post = Post.findById(postId);
+        const post = await Post.findById(postId);
 
         if (!post) {
             return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
@@ -99,7 +129,13 @@ function updatePost(req, res) {
             return res.status(400).json({ message: '제목과 내용을 입력해주세요.' });
         }
 
-        const updatedPost = new Post(postId, null, title, content, image).updatePost();
+        let imagePath = null;
+        if (req.file) {
+            const fileName = `${Date.now()}-${req.file.originalname}`;
+            imagePath = saveBinaryFile(fileName, req.file.buffer); // 파일 저장
+        }
+
+        const updatedPost = new Post(postId, null, title, content, imagePath).updatePost();
 
         return res.status(200).json({
             message: "게시글 수정 성공",
