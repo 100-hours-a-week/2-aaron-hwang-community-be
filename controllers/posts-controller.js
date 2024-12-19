@@ -87,6 +87,9 @@ function createPost(req, res) {
     try {
         const { title, content } = req.body;
         const authorId = req.session.userId;
+        if (!authorId) {
+            return res.status(401),json({ message: '권한 없음' });
+        }
 
         if (!title || !content) {
             return res.status(400).json({ message: '제목, 내용은 필수입니다.' });
