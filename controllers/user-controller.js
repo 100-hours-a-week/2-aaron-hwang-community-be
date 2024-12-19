@@ -69,9 +69,10 @@ async function updateUserProfile (req, res) {
             return res.status(400).json({ message: '사용자 이름을 입력해주세요.' });
         }
 
-        let profile_img = req.body.profile_img;;
+        let profile_img = req.body.profile_img;
+        let fileName = '';
         if (req.file) {
-            const fileName = `${Date.now()}-${req.file.originalname}`;
+            fileName = `${Date.now()}-${req.file.originalname}`;
             profile_img = saveBinaryFile(fileName, req.file.buffer); // 파일 저장
         }
 
@@ -79,6 +80,10 @@ async function updateUserProfile (req, res) {
         if (!result) {
             return res.status(404).json({ message: '해당 사용자를 찾을 수 없습니다.' });
         }
+        
+        // 세션 업데이트
+        req.session.profile_img = loadBinaryFile(fileName).toString('base64');
+        req.session.username = username;
 
         return res.status(200).json({ message: '사용자 이름이 성공적으로 변경되었습니다.' });
 
