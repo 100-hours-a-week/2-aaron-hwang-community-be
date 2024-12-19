@@ -58,14 +58,17 @@ async function signupUser(req, res) {
         // 사용자 생성
         const newUser = new User(null, email, pwd, username, profile_img, new Date(), new Date());
         const createdUser = await newUser.addUser();
-        console.log(createdUser)
+        if (!createdUser) {
+            console.log('controller signup error')
+            return res.status(500).json({ message: '회원가입 중 오류가 발생했습니다.' });
+        }
         // 세션 설정
         req.session.userId = createdUser.id;
         req.session.email = createdUser.email;
         req.session.profile_img = loadBinaryFile(createdUser.profile_img.split('\\').pop()).toString('base64');
         req.session.username = createdUser.username;
 
-        return res.status(201).json({ message: '회원가입 성공!' });
+        return res.status(201).json({ message: '회원가입 성공!', data: createdUser });
     } catch(error) {
         return res.status(500).json({ error: error.message });
     }

@@ -26,11 +26,12 @@ export function saveBinaryFile(fileName, buffer) {
 
     const filePath = path.join(uploadDir, fileName);
     fs.writeFileSync(filePath, buffer);
-    return filePath; // 저장된 파일 경로 반환
+    return fileName; // 저장된 파일 경로 반환
 }
 
 // 바이너리 파일 로드
 export function loadBinaryFile(fileName) {
+    if (!fileName) return null;
     const filePath = path.join(__dirname, 'public', 'images', fileName);
     if (!fs.existsSync(filePath)) throw new Error(`${fileName} 파일을 찾을 수 없습니다.`);
     return fs.readFileSync(filePath); // 바이너리 데이터 반환
