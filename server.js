@@ -31,10 +31,18 @@ app.use(session({
     }
 }));
 app.use((req, res, next) => {
-    console.log('세션 데이터:', req.session);
+    const startTime = Date.now(); // 요청 시작 시간
+    res.on('finish', () => { // 요청 종료 시점에 로그 기록
+        const duration = Date.now() - startTime;
+        const logMessage = `
+        [${new Date().toISOString()}] ${req.method} ${req.originalUrl} 
+        Status: ${res.statusCode} | Duration: ${duration}ms | 
+        Session Email: ${req.session?.email || 'Not Logged In'}
+        `;
+        console.log(logMessage.trim());
+    });
     next();
 });
-
 // 보안 헤더 설정
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
