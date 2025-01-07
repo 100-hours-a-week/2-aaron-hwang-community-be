@@ -147,9 +147,15 @@ async function deleteUser (req, res){
         if (!result) {
             return res.status(404).json({ message: '해당 사용자를 찾을 수 없습니다.' });
         }
-        
 
-        res.status(200).json({ message: '회원 탈퇴가 성공적으로 처리되었습니다.' });
+        // 세션 삭제
+        req.session.destroy(err => {
+            if (err) return res.status(500).json({ message: "서버사이드 세션 삭제 오류" });
+            
+            res.clearCookie('connect.sid');
+            res.status(200).json({ message: '회원 탈퇴가 성공적으로 처리되었습니다.' });
+        });
+        
     } catch (error) {
         return res.status(500).json({ error: error.message });
     }
