@@ -32,10 +32,9 @@ async function getPosts(req, res){
             
         }
 
-        posts.slice(startIndex, page*limit); // 6개씩 잘라서 보내기
-        console.log(posts)
+        const pagedPosts = posts.slice(startIndex, page*limit); // 6개씩 잘라서 보내기
 
-        posts.forEach(post => {
+        pagedPosts.forEach(post => {
             try{
                 post.author_profile_img = loadBinaryFile(post.author_profile_img.split('\\').pop()).toString('base64');
             }
@@ -46,7 +45,7 @@ async function getPosts(req, res){
         
         return res.status(200).json({
             message: "게시글 목록 조회 성공",
-            data: posts
+            data: pagedPosts
         });
     } catch (error) {
         return res.status(500).json({ error: error.message });
