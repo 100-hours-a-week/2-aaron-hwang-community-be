@@ -11,12 +11,29 @@ const upload = multer({
 });
 
 async function getPosts(req, res){
+    const page = parseInt(req.query.page, 10)||1;
+    const limit = 6;
     try {    
         const posts = await Post.loadPosts();
-        
         if(!posts){
             res.status(404).json({message: "존재하지 않는 리소스입니다"});
         }
+
+        posts.sort((a, b) => b.id - a.id); // 게시글 최신순 정리
+        
+        // 게시글 페이징
+        const startIndex = (page-1)*limit
+        if (startIndex >= posts.length) {
+            return res.json({
+                message: "마지막 게시글 페이지",
+                data: [],
+                EOD : true
+            });
+            
+        }
+
+        posts.slice(startIndex, page*limit); // 6개씩 잘라서 보내기
+        console.log(posts)
 
         posts.forEach(post => {
             try{
@@ -29,7 +46,7 @@ async function getPosts(req, res){
         
         return res.status(200).json({
             message: "게시글 목록 조회 성공",
-            data: posts.sort((a, b) => b.id - a.id)
+            data: posts
         });
     } catch (error) {
         return res.status(500).json({ error: error.message });
