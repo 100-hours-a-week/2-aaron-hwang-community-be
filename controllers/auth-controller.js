@@ -1,12 +1,5 @@
 import User from '../models/User.js';
-import multer from 'multer'
-import { saveBinaryFile, loadBinaryFile } from '../utils/fsUtils.js'
-
-// Multer 설정
-const upload = multer({
-    storage: multer.memoryStorage(), // 메모리에 바이너리 저장
-    limits: { fileSize: 5 * 1024 * 1024 }, // 파일 크기 제한 (5MB)
-});
+import { upload, uploadFileToS3, deleteFileFromS3 } from '../middlewares/multer-s3.js';
 
 async function loginUser(req, res) {
     try{
@@ -20,7 +13,11 @@ async function loginUser(req, res) {
         // 세션 설정
         req.session.userId = user.id;
         req.session.email = user.email;
-        req.session.profile_img = loadBinaryFile(user.profile_img.split('\\').pop()).toString('base64');
+        if (user.profile_img){
+            req.session.profile_img = user.profile_img
+        } else {
+            req.session.profile_img = `https://${process.env.CLOUDFRONT_DOMAIN}/default_profile.jpg`
+        }
         req.session.username = user.username;
         req.session.save(err => {
             if (err) throw err;
@@ -48,18 +45,15 @@ async function signupUser(req, res) {
 
         let profile_img = null;
         if (req.file) {
-            const fileName = `${Date.now()}-${req.file.originalname}`;
-            profile_img = saveBinaryFile(fileName, req.file.buffer); // 파일 저장
-        }
-        else {
-            profile_img = 'default_profile.jpg';
-        }
+            profile_img = await uploadFileToS3(req.file); // 파일 저장
+        } else {
+            profile_img = `https://${process.env.CLOUDFRONT_DOMAIN}/default_profile.jpg`
+        }    
 
         // 사용자 생성
         const newUser = new User(null, email, pwd, username, profile_img, new Date(), new Date());
         const createdUser = await newUser.addUser();
         if (!createdUser) {
-            console.log('controller signup error')
             return res.status(500).json({ message: '회원가입 중 오류가 발생했습니다.' });
         }
         /* 
@@ -68,7 +62,7 @@ async function signupUser(req, res) {
         req.session.email = createdUser.email;
         req.session.profile_img = loadBinaryFile(createdUser.profile_img.split('\\').pop()).toString('base64');
         req.session.username = createdUser.username;
- */
+        */
         return res.status(201).json({ message: '회원가입 성공!', data: createdUser });
     } catch(error) {
         return res.status(500).json({ error: error.message });

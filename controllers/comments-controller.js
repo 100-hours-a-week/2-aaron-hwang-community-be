@@ -21,7 +21,6 @@ async function createComment(req, res) {
         }
         
         const newComment = new Comment(null, postId, userId, commentContent); 
-        console.log(newComment)
         const result = await newComment.createComment();
         if(!result) {
             return res.status(500).json({ message: "댓글 생성 중 오류가 발생했습니다." });

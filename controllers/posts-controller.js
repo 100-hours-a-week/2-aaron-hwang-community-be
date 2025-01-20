@@ -1,18 +1,12 @@
 import Post from '../models/Post.js'
 import Like from '../models/Like.js'
 import Comment from '../models/Comment.js'
-import multer from 'multer'
-import { saveBinaryFile, loadBinaryFile } from '../utils/fsUtils.js'
-
-// Multer 설정
-const upload = multer({
-    storage: multer.memoryStorage(), // 메모리에 바이너리 저장
-    limits: { fileSize: 5 * 1024 * 1024 }, // 파일 크기 제한 (5MB)
-});
+import { upload, uploadFileToS3, deleteFileFromS3 } from '../middlewares/multer-s3.js';
 
 async function getPosts(req, res){
-    const page = parseInt(req.query.page, 10)||1;
+    const page = parseInt(req.query.page, 10) || 1;
     const limit = 6;
+
     try {    
         const posts = await Post.loadPosts();
         if(!posts){
@@ -22,7 +16,7 @@ async function getPosts(req, res){
         posts.sort((a, b) => b.id - a.id); // 게시글 최신순 정리
         
         // 게시글 페이징
-        const startIndex = (page-1)*limit
+        const startIndex = (page-1) * limit
         if (startIndex >= posts.length) {
             return res.json({
                 message: "마지막 게시글 페이지",
@@ -35,12 +29,13 @@ async function getPosts(req, res){
         const pagedPosts = posts.slice(startIndex, page*limit); // 6개씩 잘라서 보내기
 
         pagedPosts.forEach(post => {
-            try{
-                post.author_profile_img = loadBinaryFile(post.author_profile_img.split('\\').pop()).toString('base64');
-            }
-            catch{
-                post.author_profile_img = null;
-            }
+            if(post.author_profile_img) {
+                post.author_profile_img = post.author_profile_img.replace(`https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`,
+                    `https://${process.env.CLOUDFRONT_DOMAIN}`)
+            } else {
+                post.author_profile_img = `https://${process.env.CLOUDFRONT_DOMAIN}/default_profile.jpg`
+            }    
+            console.log("posts-controller>Here2>", post.author_profile_img)
         })
         
         return res.status(200).json({
@@ -67,27 +62,27 @@ async function getPostDetail(req, res) {
             return res.status(404).json({message: "게시글을 찾을 수 없습니다"});
         }
 
-        try {
-            post.image = loadBinaryFile(post.image.split('\\').pop()).toString('base64');
-        }
-        catch {
-            post.image = null
-        }
-
-        try {
-            post.author_profile_img = loadBinaryFile(post.author_profile_img.split('\\').pop()).toString('base64');
-        }
-        catch {
-            post.author_profile_img = null
+        if(post.image) {
+            console.log(post.image.replace(`https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`,
+                `https://${process.env.CLOUDFRONT_DOMAIN}`))
+            post.image = post.image.replace(`https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`,
+                `https://${process.env.CLOUDFRONT_DOMAIN}`)
+        } 
+        
+        if(post.author_profile_img) {
+            post.author_profile_img = post.author_profile_img.replace(`https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`,
+                `https://${process.env.CLOUDFRONT_DOMAIN}`)
+        } else {
+            post.author_profile_img = `https://${process.env.CLOUDFRONT_DOMAIN}/default_profile.jpg`
         }        
 
         post.comments.forEach(comment => {
-            try{
-                comment.author_img = loadBinaryFile(comment.author_img.split('\\').pop()).toString('base64');
-            }
-            catch{
-                comment.author_img = null;
-            }
+            if(comment.author_img) {
+                comment.author_img = comment.author_img.replace(`https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`,
+                    `https://${process.env.CLOUDFRONT_DOMAIN}`)
+            } else {
+                comment.author_img = `https://${process.env.CLOUDFRONT_DOMAIN}/default_profile.jpg`
+            }  
         })
 
         return res.status(200).json({
@@ -99,7 +94,7 @@ async function getPostDetail(req, res) {
     }
 }
 
-function createPost(req, res) {
+async function createPost(req, res) {
     try {
         const { title, content } = req.body;
         const authorId = req.session.userId;
@@ -114,7 +109,8 @@ function createPost(req, res) {
         let imagePath = null;
         if (req.file) {
             const fileName = `${Date.now()}-${req.file.originalname}`;
-            imagePath = saveBinaryFile(fileName, req.file.buffer); // 파일 저장
+            imagePath = await uploadFileToS3(req.file); 
+            /* saveBinaryFile(fileName, req.file.buffer); // 파일 저장 */
         }
         
         const post = new Post(null, authorId, title, content, imagePath);
@@ -151,7 +147,7 @@ async function updatePost(req, res) {
         let imagePath = null;
         if (req.file) {
             const fileName = `${Date.now()}-${req.file.originalname}`;
-            imagePath = saveBinaryFile(fileName, req.file.buffer); // 파일 저장
+            imagePath = await uploadFileToS3(req.file);
         }
 
         const updatedPost = new Post(postId, null, title, content, imagePath).updatePost();

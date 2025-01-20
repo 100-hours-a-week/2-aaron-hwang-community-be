@@ -2,14 +2,9 @@ import User from '../models/User.js';
 import Post from '../models/Post.js';
 import Like from '../models/Like.js';
 import Comment from '../models/Comment.js';
-import multer from 'multer'
-import { saveBinaryFile, loadBinaryFile } from '../utils/fsUtils.js'
+import { loadBinaryFile } from '../utils/fsUtils.js'
+import { upload, uploadFileToS3, deleteFileFromS3 } from '../middlewares/multer-s3.js';
 
-// Multer 설정
-const upload = multer({
-    storage: multer.memoryStorage(), // 메모리에 바이너리 저장
-    limits: { fileSize: 5 * 1024 * 1024 }, // 파일 크기 제한 (5MB)
-});
 
 function getSessionUser (req, res) {
     try {
@@ -18,9 +13,9 @@ function getSessionUser (req, res) {
         }
 
         const { userId, email, profile_img, username } = req.session;
-
+        
         res.status(200).json({
-            message: "화원정보 조회 성공",
+            message: "회원정보 조회 성공",
             data: {
                 id: userId,
                 email: email,
@@ -47,7 +42,7 @@ async function getUserProfile (req, res) {
             data: {
                 id: user.id,
                 username: user.username,
-                profile_img: loadBinaryFile(user.profile_img .split('\\').pop()).toString('base64')
+                profile_img: user.profile_img
             }
         });
     } catch (error) {
@@ -60,6 +55,7 @@ async function updateUserProfile (req, res) {
         const userId = parseInt(req.params.user_id);
         const username = req.body.username;
         const sessionUserId = req.session.userId;
+        const oldImage = req.session.profile_img
 
         if (!(userId === sessionUserId)) {
             return res.status(401).json({ message: "권한 없음" });
@@ -72,8 +68,10 @@ async function updateUserProfile (req, res) {
         let profile_img = req.body.profile_img;
         let fileName = '';
         if (req.file) {
-            fileName = `${Date.now()}-${req.file.originalname}`;
-            profile_img = saveBinaryFile(fileName, req.file.buffer); // 파일 저장
+            console.log(oldImage)
+            if(oldImage.split('/').pop() != 'default_profile.jpg'){
+                await deleteFileFromS3(oldImagefileUrl.split(`${process.env.S3_BUCKET_NAME}/`)[1])}
+            profile_img = await uploadFileToS3(req.file); // 파일 저장
         }
 
         const result = await User.updateUserProfile(userId, username, profile_img);
@@ -82,7 +80,9 @@ async function updateUserProfile (req, res) {
         }
         
         // 세션 업데이트
-        req.session.profile_img = loadBinaryFile(fileName).toString('base64');
+        console.log(profile_img)
+        req.session.profile_img = profile_img.replace(`https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`,
+            `https://${process.env.CLOUDFRONT_DOMAIN}`);
         req.session.username = username;
 
         return res.status(200).json({ message: '사용자 이름이 성공적으로 변경되었습니다.' });
@@ -121,6 +121,7 @@ async function deleteUser (req, res){
     try {    
         const userId = parseInt(req.params.user_id);
         const sessionUserId = req.session.userId;
+        const oldImage = req.session.profile_img;
 
         if (!(userId === sessionUserId)) {
             return res.status(401).json({ message: "권한 없음" });
@@ -141,6 +142,10 @@ async function deleteUser (req, res){
             comments.forEach(async comment => {
                 await Comment.deleteComment(comment.id);
         });}
+
+        // S3 이미지 삭제
+        if(oldImage.split('/').pop() != 'default_profile.jpg'){
+            await deleteFileFromS3(oldImagefileUrl.split(`${process.env.S3_BUCKET_NAME}/`)[1])}
 
 
         const result = User.deleteUser(userId);
