@@ -9,21 +9,29 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      # 1. Checkout repo
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+      # 2. AWS 자격 증명 설정
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # 3. Amazon ECR 로그인
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      
+      # 4. Docker image 빌드
       - name: Build Docker Image
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPO:backend ./2-aaron-hwang-community-be
 
+      # 5. Image를 ECR에 push
       - name: Push Docker Image to ECR
         run: |
           docker push $ECR_REGISTRY/$ECR_REPO:backend
