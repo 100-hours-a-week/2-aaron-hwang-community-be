@@ -26,12 +26,12 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
       
-      # 4. Docker image 빌드
-      - name: Build Docker Image
+      # 4. Docker image 빌드 & 푸시시
+      - name: Build and push docker image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPO: ${{ secrets.ECR_REPO }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPO:backend ./2-aaron-hwang-community-be
-
-      # 5. Image를 ECR에 push
-      - name: Push Docker Image to ECR
-        run: |
           docker push $ECR_REGISTRY/$ECR_REPO:backend
+
