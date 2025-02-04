@@ -32,6 +32,6 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPO: ${{ secrets.ECR_REPO }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPO:backend ./2-aaron-hwang-community-be
+          docker build -t $ECR_REGISTRY/$ECR_REPO:backend .
           docker push $ECR_REGISTRY/$ECR_REPO:backend
 
