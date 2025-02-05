@@ -15,8 +15,16 @@ const s3 = new S3Client({
 });
 
 // Multer 설정
-const storage = multer.memoryStorage(); // 메모리에서 파일 처리
-const upload = multer({ storage });
+const upload = multer({
+    storage: multer.memoryStorage(), // 바이너리 데이터 저장
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB 제한
+    fileFilter: (req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+            return cb(new Error('이미지 파일만 업로드 가능합니다.'), false);
+        }
+        cb(null, true);
+    }
+});
 
 // S3 업로드 함수
 const uploadFileToS3 = async (file) => {

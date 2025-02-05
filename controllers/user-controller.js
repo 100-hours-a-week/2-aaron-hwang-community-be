@@ -2,8 +2,7 @@ import User from '../models/User.js';
 import Post from '../models/Post.js';
 import Like from '../models/Like.js';
 import Comment from '../models/Comment.js';
-import { loadBinaryFile } from '../utils/fsUtils.js'
-import { upload, uploadFileToS3, deleteFileFromS3 } from '../middlewares/multer-s3.js';
+import { uploadFileToS3, deleteFileFromS3 } from '../middlewares/multer-s3.js';
 
 
 function getSessionUser (req, res) {
@@ -70,7 +69,7 @@ async function updateUserProfile (req, res) {
         if (req.file) {
             console.log(oldImage)
             if(oldImage.split('/').pop() != 'default_profile.jpg'){
-                await deleteFileFromS3(oldImagefileUrl.split(`${process.env.S3_BUCKET_NAME}/`)[1])}
+                await deleteFileFromS3(oldImage.split(`/`).pop())}
             profile_img = await uploadFileToS3(req.file); // 파일 저장
         }
 
@@ -167,4 +166,4 @@ async function deleteUser (req, res){
 }
 
 export { getSessionUser, getUserProfile, 
-    updateUserProfile, updatePassword, deleteUser, upload };
+    updateUserProfile, updatePassword, deleteUser };
